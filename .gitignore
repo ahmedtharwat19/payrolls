@@ -1,136 +1,196 @@
-# Flutter & Dart
-.dart_tool/
-.packages
-.packages.generated
-.pub/
-.pub-preload-cache/
-build/
-flutter_*.png
-linked_*.ds
-unlinked.ds
-unlinked_spec.ds
-pubspec.lock
-doc/api/
-generated_plugin_registrant.dart
-.flutter-plugins
-.flutter-plugins-dependencies
+# ============================================================
+# ✅ إضافات مهمة لمشروع الرواتب
+# ============================================================
 
-# Coverage
-coverage/
-app.*.symbols
-
-# Android
-**/android/.gradle/
-**/android/.idea/
-**/android/**/build/
-**/android/**/captures/
-**/android/**/gradle-wrapper.jar
-**/android/**/gradlew
-**/android/**/gradlew.bat
-**/android/**/key.properties
-**/android/**/local.properties
-**/android/**/proguard/
-**/android/**/lint/
-**/android/**/GeneratedPluginRegistrant.java
+# 🔒 ملفات حساسة (الأهم!)
+*.key
+*.pem
+*.p12
+*.pfx
 *.jks
+*.keystore
+*.env
+*.env.*
+!.env.example
+service_account.json
+*.secret.json
+*.firebase.json
+!firebase.json.example
 
-# iOS
-**/ios/**/.sconsign.dblite
-**/ios/**/.symlinks/
-**/ios/**/.tags*
-**/ios/**/.vagrant/
-**/ios/**/DerivedData/
-**/ios/**/Icon?
-**/ios/**/Pods/
-**/ios/**/profile
-**/ios/**/xcuserdata
-**/ios/**/**/*sync/
-**/ios/**/*.mode1v3
-**/ios/**/*.mode2v3
-**/ios/**/*.moved-aside
-**/ios/**/*.pbxuser
-**/ios/**/*.perspectivev3
-**/ios/.generated/
-**/ios/Flutter/.last_build_id
-**/ios/Flutter/App.framework
-**/ios/Flutter/Flutter.framework
-**/ios/Flutter/Flutter.podspec
-**/ios/Flutter/Generated.xcconfig
-**/ios/Flutter/app.flx
-**/ios/Flutter/app.zip
-**/ios/Flutter/flutter_assets/
-**/ios/Flutter/flutter_export_environment.sh
-**/ios/Flutter/ephemeral/
-**/ios/ServiceDefinitions.json
-**/ios/Runner/GeneratedPluginRegistrant.*
+# 📁 ملفات Firebase
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+firebase_app_id_file.json
 
-# macOS
+# 📊 ملفات قاعدة البيانات
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+*.dump
+*.backup
+
+# 📁 ملفات Excel مؤقتة
+*.xlsx
+*.xls
+*.csv
+!assets/sample_import.xlsx
+
+# 📁 ملفات التصدير
+exports/
+imports/
+temp/
+
+# 🖥️ ملفات النظام
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 .DS_Store
-**/Flutter/ephemeral/
-**/Pods/
-**/macos/Flutter/GeneratedPluginRegistrant.swift
-**/macos/Flutter/ephemeral
-**/xcuserdata/
+._*
+*~
+*.tmp
+*.temp
 
-# Windows
-**/windows/flutter/generated_plugin_registrant.cc
-**/windows/flutter/generated_plugin_registrant.h
-**/windows/flutter/generated_plugins.cmake
+# 📦 ملفات التوزيع
+*.apk
+*.aab
+*.ipa
+*.dmg
+*.exe
+*.msi
+*.deb
+*.rpm
 
-# Linux
-**/linux/flutter/generated_plugin_registrant.cc
-**/linux/flutter/generated_plugin_registrant.h
-**/linux/flutter/generated_plugins.cmake
-
-# Android Studio
-**/android/.idea/
-**/android/app.iml
-.idea/
-*.iws
-*.iml
-*.ipr
-
-# VS Code
-.vscode/
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# Miscellaneous
-*.class
-*.lock
-*.log
-*.pyc
+# 🔧 ملفات IDE الإضافية
+**/workspace.xml
+**/tasks.xml
+**/gradle.xml
+**/vcs.xml
+**/modules.xml
+**/misc.xml
+**/runConfigurations/
 *.swp
-.atom/
-.history
-.svn/
-.buildlog/
+*.swo
+*~
+*.bak
+*.orig
 
-# Flutter repo-specific (for contributors)
-version
-analysis_benchmark.json
-/dev/benchmarks/mega_gallery/
-/dev/bots/.recipe_deps
-/dev/bots/android_tools/
-/dev/devicelab/ABresults*.json
-/dev/docs/doc/
-/dev/docs/flutter.docs.zip
-/dev/docs/lib/
-/dev/docs/pubspec.yaml
-/dev/integration_tests/**/xcuserdata
-/dev/integration_tests/**/Pods
-/packages/flutter/coverage/
-/bin/cache/
-/bin/internal/bootstrap.bat
-/bin/internal/bootstrap.sh
-/bin/mingit/
+# 📊 تقارير الاختبارات
+test/**/coverage/
+test/**/reports/
+*.test-report.json
 
-# Exceptions to above rules
-!**/ios/**/default.mode1v3
-!**/ios/**/default.mode2v3
-!**/ios/**/default.pbxuser
-!**/ios/**/default.perspectivev3
-!/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
-!/dev/ci/**/Gemfile.lock
+# 📁 ملفات المستخدم المؤقتة
+user_data/
+temp_downloads/
+.cache/
+
+# 🔐 SSH Keys (إذا كانت موجودة في المشروع)
+.ssh/
+**/.ssh/
+id_rsa*
+id_ed25519*
+*.ppk
+known_hosts
+
+# 📦 ملفات Lock (باستثناء pubspec.lock)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+Gemfile.lock
+
+# 🗄️ ملفات أرشفة
+*.zip
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.gz
+*.bz2
+*.xz
+
+# 📁 مجلدات المشاريع الفرعية
+node_modules/
+**/node_modules/
+vendor/
+**/vendor/
+packages/
+**/packages/
+
+# 🔍 ملفات الـ Debug
+debug.log
+error_log
+*.log
+*.stacktrace
+*.error
+
+# 📂 ملفات التصدير المؤقتة
+*.tmp.xlsx
+*.tmp.csv
+.temp_import/
+
+# ✅ بيانات المستخدم المحلية
+user_data.json
+local_settings.json
+*.local.json
+
+# 📱 ملفات Android الخاصة
+android/key.properties
+android/app/key.properties
+android/app/upload-keystore.jks
+android/app/debug.keystore
+
+# 📱 ملفات iOS الخاصة
+ios/Runner/GoogleService-Info.plist
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+
+# 🌐 ملفات الويب
+web/favicon.png
+web/*.dart.js
+web/*.wasm
+web/*.js.map
+
+# 🐍 Python (إذا كنت تستخدم سكريبتات)
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.eggs/
+*.egg-info/
+*.egg
+
+# 📦 Gradle
+**/android/gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/.gradle/
+
+# 🗑️ ملفات مؤقتة من الحزم
+*.part
+*.freezed.dart
+*.g.dart
+*.config.dart
+*.mocks.dart
+*.mo.dart
+*.reflectable.dart
+
+# ✅ إضافات جديدة لمشروع الرواتب
+INTEGRATION_README.md
+git_commands.txt
+
+# ✅ ملفات البناء المؤقتة
+.dart_tool/
+.flutter-plugins-dependencies
+.vscode/
+android/build/
+build/
+linux/flutter/
+macos/Flutter/
+windows/flutter/
+pubspec.lock

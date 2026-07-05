@@ -12,7 +12,11 @@ class ImportAttendancePage extends StatelessWidget {
   const ImportAttendancePage({super.key});
 
   Future<void> _importExcel(BuildContext context) async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['xlsx']);
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['xlsx', 'xls', 'csv'],
+      allowMultiple: false,
+    );
     if (result != null && result.files.single.path != null) {
       final file = File(result.files.single.path!);
       final bytes = file.readAsBytesSync();
@@ -20,13 +24,15 @@ class ImportAttendancePage extends StatelessWidget {
 
       final sheet = excel.tables[excel.tables.keys.first];
       if (sheet == null) return;
-      if(!context.mounted) return;
-      final controller = Provider.of<EmployeeController>(context, listen: false);
+      if (!context.mounted) return;
+      final controller =
+          Provider.of<EmployeeController>(context, listen: false);
 
       for (var row in sheet.rows.skip(1)) {
         final name = row[0]?.value.toString().trim();
         final overtime = double.tryParse(row[1]?.value.toString() ?? '0') ?? 0;
-        final lateMinutes = double.tryParse(row[2]?.value.toString() ?? '0') ?? 0;
+        final lateMinutes =
+            double.tryParse(row[2]?.value.toString() ?? '0') ?? 0;
 
         controller.updateAttendanceByName(name!, overtime, lateMinutes);
       }

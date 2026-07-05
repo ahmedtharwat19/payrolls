@@ -53,21 +53,24 @@ class _EmployeeFormState extends State<EmployeeForm> {
               TextFormField(
                 decoration: InputDecoration(labelText: 'basic_salary'.tr()),
                 keyboardType: TextInputType.number,
-                onSaved: (v) => _data['basicSalary'] = double.tryParse(v ?? '0') ?? 0,
+                onSaved: (v) =>
+                    _data['basicSalary'] = double.tryParse(v ?? '0') ?? 0,
               ),
               TextFormField(
                 decoration: InputDecoration(labelText: 'allowances'.tr()),
                 keyboardType: TextInputType.number,
-                onSaved: (v) => _data['allowances'] = double.tryParse(v ?? '0') ?? 0,
+                onSaved: (v) =>
+                    _data['allowances'] = double.tryParse(v ?? '0') ?? 0,
               ),
               TextFormField(
                 decoration: InputDecoration(labelText: 'deductions'.tr()),
                 keyboardType: TextInputType.number,
-                onSaved: (v) => _data['deductions'] = double.tryParse(v ?? '0') ?? 0,
+                onSaved: (v) =>
+                    _data['deductions'] = double.tryParse(v ?? '0') ?? 0,
               ),
               DropdownButtonFormField<String>(
                 decoration: InputDecoration(labelText: 'salary_type'.tr()),
-                value: 'net',
+                initialValue: 'net',
                 onChanged: (v) => _data['salaryType'] = v,
                 items: ['net', 'gross'].map((e) {
                   return DropdownMenuItem(value: e, child: Text(e.tr()));
@@ -75,7 +78,7 @@ class _EmployeeFormState extends State<EmployeeForm> {
               ),
               DropdownButtonFormField<String>(
                 decoration: InputDecoration(labelText: 'payment_method'.tr()),
-                value: 'cash',
+                initialValue: 'cash',
                 onChanged: (v) => _data['paymentMethod'] = v,
                 items: ['cash', 'bank'].map((e) {
                   return DropdownMenuItem(value: e, child: Text(e.tr()));
@@ -107,7 +110,7 @@ class _EmployeeFormState extends State<EmployeeForm> {
                   Navigator.pop(context);
                 },
                 child: Text('save'.tr()),
-              )
+              ),
             ],
           ),
         ),
