@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/auth/auth_service.dart';
@@ -13,13 +14,13 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _userCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
-  String? _error;
+  String? _errorKey;
   bool _loading = false;
 
   Future<void> _submit() async {
     setState(() {
       _loading = true;
-      _error = null;
+      _errorKey = null;
     });
 
     final auth = context.read<AuthService>();
@@ -33,7 +34,7 @@ class _LoginPageState extends State<LoginPage> {
         MaterialPageRoute(builder: (_) => widget.homeAfterLogin),
       );
     } else {
-      setState(() => _error = result);
+      setState(() => _errorKey = result);
     }
   }
 
@@ -50,22 +51,22 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 const Icon(Icons.lock_outline, size: 48),
                 const SizedBox(height: 16),
-                Text('تسجيل الدخول', style: Theme.of(context).textTheme.titleLarge),
+                Text('login_title'.tr(), style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 24),
                 TextField(
                   controller: _userCtrl,
-                  decoration: const InputDecoration(labelText: 'اسم المستخدم'),
+                  decoration: InputDecoration(labelText: 'username'.tr()),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _passCtrl,
                   obscureText: true,
-                  decoration: const InputDecoration(labelText: 'كلمة المرور'),
+                  decoration: InputDecoration(labelText: 'password'.tr()),
                   onSubmitted: (_) => _submit(),
                 ),
-                if (_error != null) ...[
+                if (_errorKey != null) ...[
                   const SizedBox(height: 12),
-                  Text(_error!, style: const TextStyle(color: Colors.red)),
+                  Text(_errorKey!.tr(), style: const TextStyle(color: Colors.red)),
                 ],
                 const SizedBox(height: 20),
                 SizedBox(
@@ -75,7 +76,7 @@ class _LoginPageState extends State<LoginPage> {
                     child: _loading
                         ? const SizedBox(
                             height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Text('دخول'),
+                        : Text('login_button'.tr()),
                   ),
                 ),
               ],
