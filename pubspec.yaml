@@ -17,32 +17,34 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   # ============================================================
-  # ✅ Local Database (SQLite)
+  # ✅ Local Database (SQLite) - إصدارات متوافقة
   # ============================================================
   sqflite: ^2.3.0
   sqflite_common_ffi: ^2.3.0
+  sqflite_common_ffi_web: ^1.1.2
+  sqlite3: ^3.1.2
   path: ^1.9.0
   path_provider: ^2.1.0
 
   # ============================================================
-  # ✅ Device Info - إصدار متوافق
+  # ✅ Device Info
   # ============================================================
-  device_info_plus: ^9.1.0
+  device_info_plus: ^11.1.0 # ⬅️ خفض الإصدار لتوافق win32
 
   # ============================================================
-  # ✅ Firebase - إصدارات متوافقة مع web
+  # ✅ Firebase - إصدارات متوافقة مع بعضها
   # ============================================================
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.16.0
-  cloud_firestore: ^4.14.0
-  firebase_remote_config: ^4.3.0
-  firebase_messaging: ^14.6.0
-  firebase_performance: ^0.9.3+3
+  firebase_core: ^3.12.0
+  firebase_auth: ^5.5.0
+  cloud_firestore: ^5.6.0
+  firebase_remote_config: ^5.4.0
+  firebase_messaging: ^15.2.0
+  firebase_performance: ^0.10.0
 
   # ============================================================
   # ✅ Navigation & State Management
   # ============================================================
-  go_router: ^13.0.0
+  go_router: ^14.8.0
   provider: ^6.1.5
 
   # ============================================================
@@ -57,49 +59,67 @@ dependencies:
   easy_localization: ^3.0.7+1
 
   # ============================================================
-  # ✅ Utilities
+  # ✅ Utilities - استخدام crypto فقط
   # ============================================================
   uuid: ^4.5.1
-  cryptography: ^2.9.0
+  crypto: ^3.0.6 # ✅ استخدم crypto فقط
+  # cryptography: ^2.9.0  # ❌ احذف هذا السطر
   intl: ^0.20.2
-  connectivity_plus: ^5.0.1
-  package_info_plus: ^4.2.0
-  url_launcher: ^6.2.5
+  connectivity_plus: ^6.1.0
+  package_info_plus: ^8.3.0
+  url_launcher: ^6.3.1
   open_file: ^4.0.0
-  http: ^1.1.0
+  http: ^1.3.0
 
   # ============================================================
-  # ✅ Excel Export/Import - إصدار متوافق
+  # ✅ Excel Export/Import
   # ============================================================
   excel: ^4.0.6
-  file_picker: ^8.0.7
+  file_picker: ^11.0.0 # ⬅️ خفض الإصدار للتوافق
 
   # ============================================================
   # ✅ Web Support
   # ============================================================
   universal_html: ^2.2.4
-
-  # ============================================================
-  # ✅ Crypto
-  # ============================================================
-  crypto: ^3.0.3
+  web: ^1.1.1
+  cryptography: ^2.9.0
+  printing: ^5.14.3
+  pdf: ^3.12.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
-  flutter_launcher_icons: ^0.13.1
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
   build_runner: ^2.4.0
 
-# ✅ حل مشكلة التوافق مع web
-dependency_overrides:
-  web: ^0.5.1
+# ✅ إزالة dependency_overrides - الأفضل تجنبها
+# dependency_overrides:
+#   sqlite3: ^3.1.2
+#   win32: ^6.0.1
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/logo.png
-    - assets/translations/
-    - assets/translations/en.json
-    - assets/translations/ar.json
+    - assets/lang/
+
+  fonts:
+    - family: Cairo
+      fonts:
+        - asset: assets/fonts/Cairo-Regular.ttf
+        - asset: assets/fonts/Cairo-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Cairo-Light.ttf
+          weight: 300
+    - family: Tajawal
+      fonts:
+        - asset: assets/fonts/Tajawal-Regular.ttf
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Bold.ttf
+    - family: NotoSans
+      fonts:
+        - asset: assets/fonts/NotoSans-Regular.ttf

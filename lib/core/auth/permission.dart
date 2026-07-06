@@ -16,35 +16,37 @@ enum Permission {
 }
 
 extension PermissionLabel on Permission {
-  /// اسم عرض بالعربي (تقدر تربطه بـ easy_localization بدل الكده لو حبيت)
-  String get labelAr {
+  /// مفتاح ترجمة (easy_localization) - استخدمه كده: permission.labelKey.tr()
+  /// المفاتيح دي موجودة في ar.json/en.json (بعضها بيعيد استخدام مفاتيح
+  /// موجودة أصلاً في المشروع زي add_employee/edit_employee).
+  String get labelKey {
     switch (this) {
       case Permission.viewEmployees:
-        return 'عرض الموظفين';
+        return 'permission_view_employees';
       case Permission.addEmployee:
-        return 'إضافة موظف';
+        return 'add_employee'; // مفتاح موجود بالفعل في المشروع
       case Permission.editEmployee:
-        return 'تعديل موظف';
+        return 'edit_employee'; // مفتاح موجود بالفعل في المشروع
       case Permission.deleteEmployee:
-        return 'حذف موظف';
+        return 'delete_employee';
       case Permission.viewPayroll:
-        return 'عرض الرواتب';
+        return 'permission_view_payroll';
       case Permission.runPayroll:
-        return 'تشغيل دورة الرواتب';
+        return 'permission_run_payroll';
       case Permission.editSalary:
-        return 'تعديل الراتب';
+        return 'permission_edit_salary';
       case Permission.viewReports:
-        return 'عرض التقارير';
+        return 'permission_view_reports';
       case Permission.exportReports:
-        return 'تصدير التقارير';
+        return 'permission_export_reports';
       case Permission.manageUsers:
-        return 'إدارة المستخدمين';
+        return 'permission_manage_users';
       case Permission.manageRoles:
-        return 'إدارة الأدوار';
+        return 'permission_manage_roles';
       case Permission.manageSettings:
-        return 'إعدادات النظام';
+        return 'permission_manage_settings';
       case Permission.manageLicense:
-        return 'إدارة الترخيص';
+        return 'permission_manage_license';
     }
   }
 }

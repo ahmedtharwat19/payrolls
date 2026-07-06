@@ -1,72 +1,76 @@
-# دليل الدمج - نظام الصلاحيات والتراخيص
+# دليل الدمج - نظام الصلاحيات والتراخيص (يدعم كل المنصات + Localization)
+
+## إيه اللي اتغيّر في النسخة دي؟
+- بقى شغال على **Android / iOS / Windows / macOS / Linux / Web** بنفس الكود.
+- كل النصوص بقت بتستخدم `easy_localization` (مفاتيح ترجمة) بدل نصوص عربي مباشرة.
+- ملف `ar.json` و`en.json` المرفقين هنا **نسخة مدمجة كاملة** (مفاتيحك القديمة + الجديدة) - تقدر تستبدل بيهم الملفين الأصليين مباشرة.
+- شاشة تفعيل الترخيص (`LicenseGate`) بقت جاهزة ومربوطة في `main.dart`.
 
 ## 1) الملفات
-انسخ المجلدات دي كما هي جوه مشروعك (نفس المسارات):
 ```
-lib/core/auth/          → permission.dart, role.dart, user_model.dart, auth_service.dart
-lib/core/database/      → app_database.dart
-lib/core/license/       → license_model.dart, device_fingerprint.dart, license_service.dart
-lib/views/auth/         → login_page.dart
-lib/views/shared/       → permission_gate.dart
-tools/                  → license_generator.dart (ده عندك انت بس، متسيبوش يترفع مع نسخة العميل)
+lib/core/auth/              → permission.dart, role.dart, user_model.dart, auth_service.dart
+lib/core/database/          → app_database.dart
+lib/core/license/           → license_model.dart, device_fingerprint.dart, license_service.dart
+lib/views/auth/             → login_page.dart
+lib/views/license/          → license_gate.dart   (شاشة تفعيل الترخيص/الجهاز)
+lib/views/shared/           → permission_gate.dart
+lib/main.dart                → استبدل بيه main.dart بتاعك بالكامل
+assets/translations/         → ar.json و en.json (استبدل بيهم الملفين الأصليين)
+tools/                       → license_generator.dart (عندك انت بس، متسيبوش يترفع مع نسخة العميل)
 ```
 
 ## 2) المكتبات
-ضيف المحتوى الموجود في `pubspec_additions.yaml` لملف `pubspec.yaml` بتاعك، وبعدين:
+ضيف محتوى `pubspec_additions.yaml` لـ `pubspec.yaml` بتاعك، وبعدين:
 ```
 flutter pub get
 ```
 
-## 3) توليد مفاتيح التوقيع (مرة واحدة بس، أول ما تبدأ)
+## 3) توليد مفاتيح التوقيع (مرة واحدة بس)
 ```
 dart run tools/license_generator.dart keys
 ```
-هيديك Private Key (سيبه عندك في مكان آمن، **متحطوش في Git**) و Public Key.
-انسخ الـ Public Key وحطه في:
+انسخ الـ Public Key وحطه في `lib/core/license/license_service.dart`:
 ```dart
-// lib/core/license/license_service.dart
 static const String _publicKeyBase64 = '...الصق هنا...';
 ```
+أضف `license_keys.txt` في `.gitignore` فورًا - ده فيه الـ Private Key بتاعك.
 
-أضف `license_keys.txt` في `.gitignore` فورًا.
-
-## 4) تعديل main.dart
-```dart
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await EasyLocalization.ensureInitialized();
-
-  final authService = AuthService();
-  await authService.bootstrap(); // بيزرع الأدوار + أول مستخدم admin
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => authService),
-        ChangeNotifierProvider(create: (_) => EmployeeController()),
-      ],
-      child: const MyApp(),
-    ),
-  );
-}
-```
-وخلي `home:` في MaterialApp يبقى `LoginPage(homeAfterLogin: AppScaffold(body: EmployeePage()))`.
-
-## 5) تفعيل ترخيص عميل جديد (السيناريو الكامل)
-1. العميل بيفتح البرنامج → يشوف شاشة "غير مُفعّل" (لازم تضيفها - فيها حقل لصق كود الترخيص).
-2. البرنامج بيوريله بصمة جهازه (استخدم `LicenseService.instance.currentDeviceFingerprint()`).
-3. العميل يبعتلك: اسم الشركة + بصمة الجهاز.
-4. انت شغّل:
+## 4) تفعيل ترخيص عميل جديد (خطوة واحدة بس - كل كود مربوط بجهاز واحد)
+1. العميل بيفتح البرنامج → `LicenseGate` هيوريله شاشة فيها بصمة جهازه جاهزة (بزرار نسخ).
+2. يبعتلك البصمة + اسم شركته + الخطة اللي طلبها، وانت تشغّل:
    ```
-   dart run tools/license_generator.dart license "شركة كذا" 5 3 2026-12-31
+   dart run tools/license_generator.dart activate "شركة كذا" 5 3 <الخطة> <بصمة الجهاز> 1
    ```
-   ابعتله الكود الناتج، يدخله في شاشة "تفعيل الترخيص" → `LicenseService.instance.activateLicense(code)`.
-5. بعدين شغّل:
+   الخطة (`<الخطة>`) ممكن تكون:
+   - `demo`       → نسخة تجريبية 7 أيام (مرة واحدة بس لكل جهاز - مؤمّنة ضد التكرار)
+   - `monthly`    → شهر واحد من النهاردة
+   - `quarterly`  → 3 شهور
+   - `semiannual` → 6 شهور
+   - `yearly`     → سنة كاملة
+   - `none`       → ترخيص دائم بدون انتهاء
+   - أو تاريخ محدد بنفسك زي `2026-12-31`
+
+   مثال:
    ```
-   dart run tools/license_generator.dart device <بصمة الجهاز> 1
+   dart run tools/license_generator.dart activate "شركة أحمد" 5 3 quarterly A1B2C3D4E5F6 1
    ```
-   ابعتله كود التفعيل، يدخله → `LicenseService.instance.activateDevice(code)`.
-6. لما يحب يفتح البرنامج على جهاز تاني، يكرر خطوة 2 و5 بس (رقم سلوت مختلف: 2، 3...) لحد ما يوصل `maxDevices`.
+3. يدخل الكود الناتج في نفس الشاشة → يدخل التطبيق مباشرة على شاشة تسجيل الدخول
+   (admin / admin123 أول مرة - غيّرها فورًا).
+4. لو عايز يفعّل جهاز إضافي (لحد ما يوصل maxDevices)، كرر نفس الخطوة برقم
+   سلوت مختلف (2، 3...) وبصمة الجهاز الجديد.
+5. **التجديد**: لما ميعاد الخطة يخلص، كرر نفس أمر `activate` بنفس بصمة
+   الجهاز ونفس رقم السلوت - هيستبدل الترخيص القديم بمدة جديدة من تاريخ
+   التجديد، من غير ما تحتاج تغيّر أي حاجة تانية في التطبيق.
+
+⚠️ **مهم**: كل كود بتولّده مربوط ببصمة الجهاز اللي كتبتها وقت التوليد فقط.
+لو حد نسخ الكود ده وحاول يستخدمه على جهاز تاني، التطبيق هيرفضه فورًا
+(`license_error_device_mismatch`) - مفيش أي طريقة يشتغل بيها على جهاز غير
+اللي اتولّد له.
+
+كل ده شغال بنفس الخطوات بالظبط على أي منصة، بما فيها الويب.
+
+## 5) ملاحظة مهمة عن الويب
+بصمة الجهاز على المتصفح (Web) أضعف من بصمة جهاز حقيقي (مبنية على معلومات المتصفح، مش هاردوير). لو العميل مسح بيانات المتصفح أو استخدم متصفح/جهاز تاني، هيحتاج تفعيل الجهاز تاني. ده قيد طبيعي في أي نظام ترخيص أوفلاين شغال من المتصفح - مفيش حل مثالي 100% من غير سيرفر مركزي.
 
 ## 6) استخدام الصلاحيات في الشاشات
 ```dart
@@ -75,12 +79,34 @@ PermissionGate(
   child: IconButton(icon: const Icon(Icons.delete), onPressed: _delete),
 )
 ```
-أو تحقق مباشر:
+وأسماء الصلاحيات والأدوار بقت مفاتيح ترجمة:
 ```dart
-if (context.read<AuthService>().can(Permission.runPayroll)) { ... }
+Text(permission.labelKey.tr())
+Text(role.name.tr())
 ```
 
-## ملاحظات مهمة
-- ده نظام أوفلاين حقيقي - مفيش أي اتصال إنترنت مطلوب في أي خطوة من خطوات التطبيق نفسه.
-- الحماية الوحيدة اللي فيها نقطة ضعف نظرية: لو حد نسخ ملف الـ `payrolls.db` بتاع جهاز مفعّل على جهاز تاني بنفس المواصفات، ممكن يستخدمه (لأن الفحص بيعتمد على بصمة الجهاز اللي المفروض تتغير، لكن مش كل بصمات الأجهزة قوية 100%). لو محتاج حماية أقوى من كده، الخطوة الجاية المنطقية هي طبقة تحقق سحابية بسيطة (Firebase مجانية) وقت التفعيل بس - ده احنا قدرنا نضيفه بسهولة فوق نفس البنية دي وقتها.
-- غيّر باسورد الـ admin الافتراضي (admin/admin123) أول حاجة بعد أول تشغيل.
+## 7) تذكير أخير
+غيّر باسورد الـ admin الافتراضي (admin/admin123) أول حاجة بعد أول تشغيل فعلي عند عميل حقيقي.
+
+
+## 8) نظام العد التنازلي المقاوم للتلاعب بالتاريخ
+بدل تاريخ انتهاء ثابت، النظام بيحسب "عدد أيام متبقية" فعلي، وبيقارن كل
+مرة يفتح فيها البرنامج بين النهاردة وآخر يوم اتفتح فيه:
+- لو حد رجّع ساعة/تاريخ جهازه للخلف → البرنامج هيرفض يفتح فورًا برسالة
+  واضحة، لحد ما يرجّع التاريخ الصحيح تاني.
+- لو التاريخ طبيعي وعدّى يوم أو أكتر → بينقص العدد المتبقي تلقائيًا.
+- لو العدد المتبقي وصل صفر → الترخيص انتهى فعليًا، محتاج تجديد.
+
+⚠️ ملحوظة: قاعدة البيانات اتغيّرت (version 2) - لو كنت مجرب نسخة قديمة من
+التطبيق قبل التحديث ده، النظام هيحدّث الجدول تلقائيًا (`onUpgrade`)، مفيش
+داعي تمسح بيانات قديمة.
+
+## 9) نظام الديمو (تجربة مجانية)
+بيتولّد بنفس أمر `activate` وباختيار `demo` كخطة - بيدّي 7 أيام تجريبية.
+محمي بطبقتين:
+1. **عندك (الأداة)**: بتحتفظ بملف `issued_demos.txt` فيه كل بصمة جهاز
+   أخدت ديمو قبل كده - لو حاولت تولّد ديمو تاني لنفس البصمة، الأداة
+   هتوقفك وتحذّرك.
+2. **جوه التطبيق نفسه**: حتى لو ولّدت كود ديمو تاني بالغلط، التطبيق
+   هيرفضه لو الجهاز ده أخد ديمو قبل كده (`license_error_demo_already_used`)
+   - العلامة دي دائمة على الجهاز ومتتمسحش لما الديمو ينتهي.

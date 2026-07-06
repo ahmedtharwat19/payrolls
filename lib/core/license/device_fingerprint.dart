@@ -1,32 +1,47 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:device_info_plus/device_info_plus.dart';
 
-/// بيولّد رقم فريد وثابت لكل جهاز (مايتغيرش لو التطبيق اتقفل وفتح تاني).
-/// ده اللي بيتبعته العميل لك عشان تولّدله كود التفعيل.
+/// بيولّد رقم شبه-فريد لكل جهاز/متصفح (مايتغيرش لو التطبيق اتقفل وفتح تاني
+/// على نفس الجهاز ونفس المتصفح).
+///
+/// ⚠️ ملحوظة مهمة على الويب: بصمة المتصفح أضعف بكتير من بصمة جهاز حقيقي
+/// (لو العميل مسح بيانات المتصفح أو فتح من متصفح تاني، هتتغير البصمة ويحتاج
+/// تفعيل تاني). ده قيد طبيعي في أي نظام ترخيص أوفلاين شغال من المتصفح.
 class DeviceFingerprint {
   static Future<String> get() async {
     final info = DeviceInfoPlugin();
     String raw;
 
-    if (Platform.isWindows) {
-      final w = await info.windowsInfo;
-      raw = w.deviceId; // معرف ثابت للجهاز
-    } else if (Platform.isLinux) {
-      final l = await info.linuxInfo;
-      raw = l.machineId ?? l.id;
-    } else if (Platform.isMacOS) {
-      final m = await info.macOsInfo;
-      raw = m.systemGUID ?? m.computerName;
-    } else if (Platform.isAndroid) {
-      final a = await info.androidInfo;
-      raw = a.id; // Android ID
-    } else if (Platform.isIOS) {
-      final i = await info.iosInfo;
-      raw = i.identifierForVendor ?? 'unknown-ios';
+    if (kIsWeb) {
+      final w = await info.webBrowserInfo;
+      raw = '${w.browserName}-${w.platform}-${w.vendor}-${w.userAgent}';
     } else {
-      raw = 'unknown-platform';
+      switch (defaultTargetPlatform) {
+        case TargetPlatform.windows:
+          final win = await info.windowsInfo;
+          raw = win.deviceId;
+          break;
+        case TargetPlatform.linux:
+          final lin = await info.linuxInfo;
+          raw = lin.machineId ?? lin.id;
+          break;
+        case TargetPlatform.macOS:
+          final mac = await info.macOsInfo;
+          raw = mac.systemGUID ?? mac.computerName;
+          break;
+        case TargetPlatform.android:
+          final and = await info.androidInfo;
+          raw = and.id;
+          break;
+        case TargetPlatform.iOS:
+          final ios = await info.iosInfo;
+          raw = ios.identifierForVendor ?? 'unknown-ios';
+          break;
+        default:
+          raw = 'unknown-platform';
+      }
     }
 
     // نعمل hash قصير وسهل النسخ بدل السلسلة الطويلة

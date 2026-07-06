@@ -12,11 +12,12 @@ class ImportAttendancePage extends StatelessWidget {
   const ImportAttendancePage({super.key});
 
   Future<void> _importExcel(BuildContext context) async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['xlsx', 'xls', 'csv'],
       allowMultiple: false,
     );
+
     if (result != null && result.files.single.path != null) {
       final file = File(result.files.single.path!);
       final bytes = file.readAsBytesSync();

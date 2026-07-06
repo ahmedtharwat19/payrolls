@@ -5,69 +5,76 @@ import '../database/app_database.dart';
 import 'device_fingerprint.dart';
 import 'license_model.dart';
 
-/// نظام ترخيص أوفلاين بالكامل:
-/// - المفتاح الخاص عندك انت بس (في أداة الـ generator، خارج التطبيق نهائيًا)
-/// - المفتاح العام مدمج هنا في التطبيق عشان يتحقق بس، مايقدرش يوقّع
+/// نظام ترخيص أوفلاين بالكامل - نسخة "عد تنازلي مقاوم للتلاعب بالتاريخ".
 ///
-/// ⚠️ لازم تستبدل _publicKeyBase64 بالمفتاح العام اللي هيطلعلك من generate_keys.dart
+/// المبدأ:
+/// - كل كود مربوط ببصمة جهاز واحد بعينه من لحظة توليده (مايتنقلش لجهاز تاني).
+/// - بدل ما نعتمد على "تاريخ انتهاء ثابت" (سهل التحايل عليه برجّع ساعة
+///   الجهاز للخلف)، بنحتفظ بـ:
+///     • remainingDays  → عدد الأيام المتبقية فعليًا
+///     • lastCheckDate  → آخر يوم اتفتح فيه البرنامج وتم الفحص
+///   كل مرة البرنامج يفتح:
+///     • لو النهاردة *قبل* lastCheckDate  → التاريخ اتلاعب بيه (رجع للخلف)
+///       → نرفض الفتح لحد ما المستخدم يرجّع التاريخ لقدام تاني.
+///     • لو النهاردة *بعد* lastCheckDate  → ننقص الفرق بالأيام من
+///       remainingDays ونحدّث lastCheckDate = النهاردة.
+///     • لو remainingDays وصل صفر أو أقل → الترخيص انتهى فعلاً.
+/// - كود الديمو (plan == 'demo') لا يُقبل على نفس الجهاز أكتر من مرة،
+///   حتى لو الديمو الأول خلص، عن طريق علامة دائمة (demo_used) في الجهاز.
 class LicenseService {
   LicenseService._();
   static final LicenseService instance = LicenseService._();
 
-  static const String _publicKeyBase64 = 'REPLACE_WITH_YOUR_PUBLIC_KEY_BASE64';
+  static const String _publicKeyBase64 = 'bc5cni8t2LDGdO2rPslHVbpzhX7RQ2XEVkbErPhTQ5Q=';
 
   final _algorithm = Ed25519();
 
-  // ---------------------------------------------------------------------
-  // 1) تفعيل ترخيص العميل (مرة واحدة لكل شركة/عميل)
-  // ---------------------------------------------------------------------
-  Future<String> activateLicense(String licenseCode) async {
-    final decoded = await verifyCode(licenseCode);
-    if (decoded == null) return 'كود الترخيص غير صحيح أو تم التلاعب به';
+  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
+  // ---------------------------------------------------------------------
+  // تفعيل الجهاز الحالي بكود مربوط بيه من الأساس (خطوة واحدة بس)
+  // ---------------------------------------------------------------------
+  Future<String> activate(String code) async {
+    final decoded = await verifyCode(code);
+    if (decoded == null) return 'license_error_invalid_code';
+
+    final currentFingerprint = await DeviceFingerprint.get();
+    if (decoded['deviceFingerprint'] != currentFingerprint) {
+      return 'license_error_device_mismatch';
+    }
+
+    final plan = decoded['plan'] as String? ?? 'custom';
+
+    // منع استخدام أكتر من ديمو واحد على نفس الجهاز، حتى لو الأول انتهى
+    if (plan == 'demo') {
+      final alreadyUsed = await _getMeta('demo_used');
+      if (alreadyUsed == 'true') {
+        return 'license_error_demo_already_used';
+      }
+    }
+
+    final license = LicenseData(
+      customerName: decoded['customerName'],
+      maxUsers: decoded['maxUsers'],
+      maxDevices: decoded['maxDevices'],
+      totalDays: decoded['totalDays'],
+      plan: plan,
+    );
+
+    final today = _dateOnly(DateTime.now());
     final db = await AppDatabase.instance.database;
+
     await db.insert(
       'license',
       {
         'id': 1,
-        'licenseJson': jsonEncode(decoded),
+        'licenseJson': jsonEncode(license.toJson()),
         'activatedAt': DateTime.now().toIso8601String(),
+        'lastCheckDate': today.toIso8601String(),
+        'remainingDays': license.totalDays, // null = دائم
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    return 'ok';
-  }
-
-  // ---------------------------------------------------------------------
-  // 2) تفعيل الجهاز الحالي (بعد ما تبعت بصمة الجهاز للمُصدر ويرجعلك كود)
-  // ---------------------------------------------------------------------
-  Future<String> activateDevice(String activationCode) async {
-    final decoded = await verifyCode(activationCode);
-    if (decoded == null) return 'كود التفعيل غير صحيح أو تم التلاعب به';
-
-    final currentFingerprint = await DeviceFingerprint.get();
-    if (decoded['deviceFingerprint'] != currentFingerprint) {
-      return 'كود التفعيل ده خاص بجهاز تاني، مش الجهاز ده';
-    }
-
-    final license = await getActiveLicense();
-    if (license == null) return 'لازم تفعّل ترخيص الشركة الأول قبل تفعيل الجهاز';
-
-    final db = await AppDatabase.instance.database;
-    final deviceCount = Sqflite.firstIntValue(
-          await db.rawQuery('SELECT COUNT(*) FROM activated_devices'),
-        ) ??
-        0;
-
-    final alreadyActivated = await db.query(
-      'activated_devices',
-      where: 'deviceFingerprint = ?',
-      whereArgs: [currentFingerprint],
-    );
-
-    if (alreadyActivated.isEmpty && deviceCount >= license.maxDevices) {
-      return 'وصلت للحد الأقصى لعدد الأجهزة المسموح بها (${license.maxDevices})';
-    }
 
     await db.insert(
       'activated_devices',
@@ -79,34 +86,70 @@ class LicenseService {
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
 
+    if (plan == 'demo') {
+      await _setMeta('demo_used', 'true');
+    }
+
     return 'ok';
   }
 
   // ---------------------------------------------------------------------
-  // 3) الفحص اليومي: بيتنادى عند فتح البرنامج / عند تسجيل الدخول
+  // الفحص اليومي: بيتنادى عند فتح البرنامج / عند تسجيل الدخول
   // ---------------------------------------------------------------------
   Future<LicenseCheckResult> validate() async {
-    final license = await getActiveLicense();
-    if (license == null) {
-      return const LicenseCheckResult(false, 'البرنامج غير مُفعّل. برجاء إدخال كود الترخيص');
-    }
-    if (license.isExpired) {
-      return const LicenseCheckResult(false, 'انتهت صلاحية الترخيص، برجاء التجديد');
-    }
-
     final fingerprint = await DeviceFingerprint.get();
     final db = await AppDatabase.instance.database;
+
     final activated = await db.query(
       'activated_devices',
       where: 'deviceFingerprint = ?',
       whereArgs: [fingerprint],
     );
-
     if (activated.isEmpty) {
-      return const LicenseCheckResult(false, 'هذا الجهاز غير مُفعّل. برجاء إدخال كود تفعيل الجهاز');
+      return const LicenseCheckResult(false, 'license_error_not_activated');
     }
 
-    return const LicenseCheckResult(true, 'ok');
+    final rows = await db.query('license', where: 'id = 1');
+    if (rows.isEmpty) {
+      return const LicenseCheckResult(false, 'license_error_not_activated');
+    }
+
+    final row = rows.first;
+    final license = LicenseData.fromJson(jsonDecode(row['licenseJson'] as String));
+
+    // ترخيص دائم (plan == lifetime أو totalDays null) - مفيش عد تنازلي خالص
+    if (license.totalDays == null) {
+      return const LicenseCheckResult(true, 'ok');
+    }
+
+    final today = _dateOnly(DateTime.now());
+    final lastCheckDate = _dateOnly(DateTime.parse(row['lastCheckDate'] as String));
+    int remainingDays = row['remainingDays'] as int;
+
+    if (today.isBefore(lastCheckDate)) {
+      // تاريخ الجهاز اترجع للخلف - تلاعب واضح. نرفض لحد ما يرجّعوا لقدام.
+      return LicenseCheckResult(false, 'license_error_clock_tampered', remainingDays: remainingDays);
+    }
+
+    if (today.isAfter(lastCheckDate)) {
+      final daysPassed = today.difference(lastCheckDate).inDays;
+      remainingDays -= daysPassed;
+
+      await db.update(
+        'license',
+        {
+          'lastCheckDate': today.toIso8601String(),
+          'remainingDays': remainingDays,
+        },
+        where: 'id = 1',
+      );
+    }
+
+    if (remainingDays <= 0) {
+      return LicenseCheckResult(false, 'license_error_expired', remainingDays: 0);
+    }
+
+    return LicenseCheckResult(true, 'ok', remainingDays: remainingDays);
   }
 
   Future<LicenseData?> getActiveLicense() async {
@@ -116,7 +159,35 @@ class LicenseService {
     return LicenseData.fromJson(jsonDecode(rows.first['licenseJson'] as String));
   }
 
+  /// بيرجع عدد الأيام المتبقية من غير ما يعمل أي تحديث (للعرض بس، مثلاً
+  /// في شاشة "معلومات الترخيص"). استخدم validate() لو عايز فحص فعلي.
+  Future<int?> getRemainingDaysDisplay() async {
+    final db = await AppDatabase.instance.database;
+    final rows = await db.query('license', where: 'id = 1');
+    if (rows.isEmpty) return null;
+    return rows.first['remainingDays'] as int?;
+  }
+
   Future<String> currentDeviceFingerprint() => DeviceFingerprint.get();
+
+  // ---------------------------------------------------------------------
+  // جدول صغير key-value لتخزين أعلام دائمة زي "demo_used"
+  // ---------------------------------------------------------------------
+  Future<String?> _getMeta(String key) async {
+    final db = await AppDatabase.instance.database;
+    final rows = await db.query('app_meta', where: 'key = ?', whereArgs: [key]);
+    if (rows.isEmpty) return null;
+    return rows.first['value'] as String;
+  }
+
+  Future<void> _setMeta(String key, String value) async {
+    final db = await AppDatabase.instance.database;
+    await db.insert(
+      'app_meta',
+      {'key': key, 'value': value},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
 
   // ---------------------------------------------------------------------
   // التحقق من التوقيع الرقمي - القلب الأمني للنظام كله
