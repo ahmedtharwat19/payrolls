@@ -1,108 +1,121 @@
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+// lib/database/app_database.dart
+
+import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
-/// نقطة واحدة للوصول لقاعدة البيانات المحلية.
-/// تشتغل على: Android / iOS (sqflite العادي) + Windows / Linux / macOS (ffi) + Web (ffi_web / IndexedDB).
 class AppDatabase {
-  AppDatabase._();
-  static final AppDatabase instance = AppDatabase._();
+  static final AppDatabase _instance = AppDatabase._internal();
+  factory AppDatabase() => _instance;
+  AppDatabase._internal();
 
-  Database? _db;
+  static Database? _database;
 
   Future<Database> get database async {
-    if (_db != null) return _db!;
-    _db = await _initDb();
-    return _db!;
+    if (_database != null) return _database!;
+    _database = await _initDatabase();
+    return _database!;
   }
 
-  Future<Database> _initDb() async {
-    if (kIsWeb) {
-      // على الويب مفيش نظام ملفات حقيقي - البيانات بتتخزن في IndexedDB بالمتصفح
-      databaseFactory = databaseFactoryFfiWeb;
-      return openDatabase('payrolls.db', version: 1, onCreate: _onCreate);
-    }
-
-    // على ويندوز/لينكس/ماك لازم تفعيل ffi قبل استخدام sqflite
-    final isDesktop = defaultTargetPlatform == TargetPlatform.windows ||
-        defaultTargetPlatform == TargetPlatform.linux ||
-        defaultTargetPlatform == TargetPlatform.macOS;
-
-    if (isDesktop) {
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
-    }
-    // على Android/iOS بيستخدم sqflite العادي زي ما هو من غير أي تعديل
-
+  Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'payrolls.db');
 
-    return openDatabase(
+    return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
-      CREATE TABLE users (
+      CREATE TABLE employees (
         id TEXT PRIMARY KEY,
-        username TEXT UNIQUE NOT NULL,
-        passwordHash TEXT NOT NULL,
-        salt TEXT NOT NULL,
-        roleId TEXT NOT NULL,
-        isActive INTEGER NOT NULL DEFAULT 1,
-        createdAt TEXT NOT NULL
+        name TEXT,
+        department TEXT,
+        jobTitle TEXT,
+        nationalId TEXT,
+        hireDate TEXT,
+        contractType TEXT,
+        employeeType TEXT,
+        insuranceCode TEXT,
+        insuranceFile TEXT,
+        taxFile TEXT,
+        basicSalary REAL,
+        allowances REAL,
+        deductions REAL,
+        salaryType TEXT,
+        paymentMethod TEXT,
+        isActive INTEGER,
+        bankName TEXT,
+        bankAccount TEXT,
+        bankSwift TEXT,
+        bankIban TEXT
       )
     ''');
 
     await db.execute('''
       CREATE TABLE roles (
         id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        permissions TEXT NOT NULL,
-        isSystemRole INTEGER NOT NULL DEFAULT 0
+        name TEXT,
+        permissions TEXT,
+        isSystemRole INTEGER
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE users (
+        id TEXT PRIMARY KEY,
+        username TEXT UNIQUE,
+        passwordHash TEXT,
+        salt TEXT,
+        roleId TEXT,
+        isActive INTEGER,
+        createdAt TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE license (
+        id INTEGER PRIMARY KEY,
+        licenseJson TEXT,
+        activatedAt TEXT
       )
     ''');
 
     await db.execute('''
       CREATE TABLE activated_devices (
         deviceFingerprint TEXT PRIMARY KEY,
-        slotNumber INTEGER NOT NULL,
-        activatedAt TEXT NOT NULL
+        slotNumber INTEGER,
+        activatedAt TEXT
       )
     ''');
 
-    await db.execute('''
-      CREATE TABLE license (
-        id INTEGER PRIMARY KEY CHECK (id = 1),
-        licenseJson TEXT NOT NULL,
-        activatedAt TEXT NOT NULL
-      )
-    ''');
+    // في app_database.dart - أضف في دالة _onCreate
 
     await db.execute('''
-      CREATE TABLE employees (
+      CREATE TABLE attendance (
         id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        nationalId TEXT,
-        department TEXT,
-        jobTitle TEXT,
-        contractType TEXT,
-        employeeType TEXT,
-        hireDate TEXT,
-        insuranceCode TEXT,
-        insuranceFile TEXT,
-        taxFile TEXT,
-        basicSalary REAL NOT NULL DEFAULT 0,
-        allowances REAL NOT NULL DEFAULT 0,
-        deductions REAL NOT NULL DEFAULT 0,
-        salaryType TEXT NOT NULL DEFAULT 'net',
-        paymentMethod TEXT NOT NULL DEFAULT 'cash',
-        isActive INTEGER NOT NULL DEFAULT 1
+        employeeId TEXT,
+        employeeName TEXT,
+        date TEXT,
+        overtimeHours REAL,
+        lateMinutes REAL,
+        notes TEXT
       )
     ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // إضافة أعمدة البنك إذا كانت غير موجودة
+      try {
+        await db.execute('ALTER TABLE employees ADD COLUMN bankName TEXT');
+        await db.execute('ALTER TABLE employees ADD COLUMN bankAccount TEXT');
+        await db.execute('ALTER TABLE employees ADD COLUMN bankSwift TEXT');
+        await db.execute('ALTER TABLE employees ADD COLUMN bankIban TEXT');
+      } catch (_) {}
+    }
   }
 }

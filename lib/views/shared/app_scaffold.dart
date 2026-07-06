@@ -1,10 +1,12 @@
 // lib/views/shared/app_scaffold.dart
-
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:puresip_payrolls/views/reports/reports_page.dart';
 import '../employee/employee_page.dart';
 import '../payroll/payroll_page.dart';
 import '../settings/rules_page.dart';
+import '../settings/settings_page.dart';
+import '../auth/login_page.dart'; // ✅ أضف هذا
 
 class AppScaffold extends StatelessWidget {
   final Widget body;
@@ -41,6 +43,7 @@ class AppScaffold extends StatelessWidget {
                 ],
               ),
             ),
+            // ✅ الموظفين
             ListTile(
               leading: const Icon(Icons.people_alt_outlined),
               title: Text('employees'.tr()),
@@ -53,6 +56,7 @@ class AppScaffold extends StatelessWidget {
                 );
               },
             ),
+            // ✅ الرواتب
             ListTile(
               leading: const Icon(Icons.attach_money_outlined),
               title: Text('payroll'.tr()),
@@ -65,8 +69,9 @@ class AppScaffold extends StatelessWidget {
                 );
               },
             ),
+            // ✅ القواعد (إعدادات الضرائب والتأمينات)
             ListTile(
-              leading: const Icon(Icons.settings),
+              leading: const Icon(Icons.gavel),
               title: Text('rules_settings'.tr()),
               onTap: () {
                 Navigator.pushReplacement(
@@ -77,10 +82,66 @@ class AppScaffold extends StatelessWidget {
                 );
               },
             ),
+            //  /,/ في app_scaffold.dart - أضف في Drawer
+            ListTile(
+              leading: const Icon(Icons.assessment),
+              title: Text('reports'.tr()),
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AppScaffold(body: ReportsPage()),
+                  ),
+                );
+              },
+            ),
+            // ✅ الإعدادات العامة
+            ListTile(
+              leading: const Icon(Icons.settings, color: Colors.blue),
+              title: Text('settings'.tr()),
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AppScaffold(body: SettingsPage()),
+                  ),
+                );
+              },
+            ),
+            const Divider(),
+            // ✅ تسجيل الخروج
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: Text(
+                'logout'.tr(),
+                style: const TextStyle(color: Colors.red),
+              ),
+              onTap: () {
+                // ✅ إصلاح تسجيل الخروج - تمرير homeAfterLogin
+                Navigator.of(context).pop();
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (_) => LoginPage(
+                      homeAfterLogin: const AppScaffold(body: EmployeePage()),
+                    ),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
-      appBar: AppBar(title: Text('payroll_system'.tr())),
+      appBar: AppBar(
+        title: Text('payroll_system'.tr()),
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+      ),
       body: SafeArea(child: body),
     );
   }

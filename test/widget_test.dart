@@ -1,3 +1,4 @@
+// test/widget_test.dart
 // This is a basic Flutter widget test.
 //
 // To perform an interaction with a widget in your test, use the WidgetTester
@@ -7,18 +8,26 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:puresip_payrolls/core/auth/auth_service.dart';
-
 import 'package:puresip_payrolls/main.dart';
+import 'package:puresip_payrolls/services/tax_service.dart';
+import 'package:puresip_payrolls/services/insurance_service.dart';
+import 'package:puresip_payrolls/core/auth/auth_service.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    // await tester.pumpWidget(const MyApp());
-    final mockAuthService = AuthService();
+    // ✅ إنشاء الخدمات المطلوبة للاختبار
+    final authService = AuthService();
+    final taxService = TaxService();
+    final insuranceService = InsuranceService();
 
-    // ✅ تمريره للـ Widget
-    await tester.pumpWidget(MyApp(authService: mockAuthService));
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(
+      MyApp(
+        authService: authService,
+        taxService: taxService,
+        insuranceService: insuranceService,
+      ),
+    );
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);

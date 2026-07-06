@@ -1,11 +1,15 @@
 // lib/main.dart
-
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // ✅ أضف هذا للـ kIsWeb
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:puresip_payrolls/services/insurance_service.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart'; // ✅ أضف
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart'; // ✅ أضف
+
+import 'services/tax_service.dart'; // ✅ أضف
+import 'services/insurance_service.dart';
 import 'controllers/employee_controller.dart';
 import 'core/auth/auth_service.dart';
 import 'views/employee/employee_page.dart';
@@ -19,14 +23,12 @@ void main() async {
   // ✅ معالجة الأخطاء العامة
   FlutterError.onError = (FlutterErrorDetails details) {
     print('❌ Flutter Error: ${details.exception}');
-    // تجاهل أخطاء CanvasKit إذا كانت موجودة
     if (details.exception.toString().contains('_handledContextLostEvent')) {
       return;
     }
     FlutterError.dumpErrorToConsole(details);
   };
 
-  // ✅ معالجة الأخطاء غير المتوقعة
   PlatformDispatcher.instance.onError = (error, stack) {
     print('❌ Platform Error: $error');
     return true;
@@ -34,10 +36,22 @@ void main() async {
 
   await EasyLocalization.ensureInitialized();
 
-  // بيزرع الأدوار الافتراضية + أول مستخدم admin لو دي أول مرة يفتح فيها البرنامج.
-  // شغالة بنفس الطريقة على كل المنصات (Android/iOS/Windows/macOS/Linux/Web).
+  // ✅ تهيئة قاعدة البيانات للـ Web
+  if (kIsWeb) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfiWeb;
+  } else {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+
+  // ✅ تهيئة AuthService
   final authService = AuthService();
   await authService.bootstrap();
+
+  // ✅ تهيئة TaxService و InsuranceService
+  final taxService = TaxService();
+  await taxService.loadSettings();
 
   final insuranceService = InsuranceService();
   await insuranceService.loadSettings();
@@ -45,23 +59,43 @@ void main() async {
   runApp(
     EasyLocalization(
       supportedLocales: const [Locale('en'), Locale('ar')],
-      path: 'assets/lang',
+      path: 'assets/lang', // ✅ تصحيح المسار
       fallbackLocale: const Locale('en'),
-      child: MyApp(authService: authService),
+      useFallbackTranslations: true,
+      child: MyApp(
+        authService: authService,
+        taxService: taxService,
+        insuranceService: insuranceService,
+      ),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
   final AuthService authService;
-  const MyApp({super.key, required this.authService});
+  final TaxService taxService;
+  final InsuranceService insuranceService;
+
+  const MyApp({
+    super.key,
+    required this.authService,
+    required this.taxService,
+    required this.insuranceService,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // ✅ AuthService
         ChangeNotifierProvider.value(value: authService),
+        
+        // ✅ EmployeeController
         ChangeNotifierProvider(create: (_) => EmployeeController()),
+        
+        // ✅ TaxService و InsuranceService
+        Provider<TaxService>.value(value: taxService),
+        Provider<InsuranceService>.value(value: insuranceService),
       ],
       child: MaterialApp(
         title: 'PureSip PayRolls',
@@ -69,11 +103,20 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.green,
           fontFamily: 'Cairo',
+          useMaterial3: true,
         ),
         localizationsDelegates: context.localizationDelegates,
         supportedLocales: context.supportedLocales,
         locale: context.locale,
-        // الترتيب: 1) فحص الترخيص (LicenseGate) → 2) تسجيل الدخول → 3) الشاشة الرئيسية
+        localeResolutionCallback: (locale, supportedLocales) {
+          if (locale == null) return const Locale('en');
+          for (var supportedLocale in supportedLocales) {
+            if (supportedLocale.languageCode == locale.languageCode) {
+              return supportedLocale;
+            }
+          }
+          return const Locale('en');
+        },
         home: const LicenseGate(
           child: LoginPage(
             homeAfterLogin: AppScaffold(body: EmployeePage()),
