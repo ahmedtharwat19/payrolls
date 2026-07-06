@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:puresip_payrolls/views/payroll/payment_adjustment_page.dart';
 import '../../controllers/employee_controller.dart';
 import '../../services/tax_service.dart';
 import '../../services/insurance_service.dart';
@@ -15,19 +16,31 @@ class PayrollPage extends StatefulWidget {
 }
 
 class _PayrollPageState extends State<PayrollPage> {
+  late TaxService _taxService;
+
+  @override
+  void initState() {
+    super.initState();
+    _taxService = context.read<TaxService>();
+  }
+
   Future<void> _exportPdf() async {
     try {
-      final controller = Provider.of<EmployeeController>(context, listen: false);
+      final controller =
+          Provider.of<EmployeeController>(context, listen: false);
       final employees = controller.employees;
-      
-      // تحويل الموظفين إلى Map للـ PDF
+
       final data = employees.map((e) {
         final gross = e.basicSalary + e.allowances - e.deductions;
         final taxable = e.salaryType == 'net' ? gross : e.basicSalary;
-        final tax = TaxService.calculateMonthlyTax(taxable);
-        final insurance = InsuranceService.calculateInsurance(basicSalary: taxable);
+
+        // ✅ استخدام instance method
+        final tax = _taxService.calculateMonthlyTax(taxable);
+        final insurance = InsuranceService.calculateInsurance(
+          basicSalary: taxable,
+        );
         final net = gross - tax - insurance['employee_share']!;
-        
+
         return {
           'name': e.name,
           'department': e.department,
@@ -39,12 +52,12 @@ class _PayrollPageState extends State<PayrollPage> {
           'netSalary': net,
         };
       }).toList();
-      
+
       await PdfExportService.exportPayrollReport(
-        data, 
+        data,
         title: 'payroll'.tr(),
       );
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('✅ تم تصدير PDF بنجاح')),
@@ -70,6 +83,17 @@ class _PayrollPageState extends State<PayrollPage> {
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_calendar),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const PaymentAdjustmentPage()),
+              );
+            },
+            tooltip: 'payment_adjustments'.tr(),
+          ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
             onPressed: _exportPdf,
@@ -110,8 +134,11 @@ class _PayrollPageState extends State<PayrollPage> {
                   ],
                   rows: employees.map((e) {
                     final gross = e.basicSalary + e.allowances - e.deductions;
-                    final taxable = e.salaryType == 'net' ? gross : e.basicSalary;
-                    final tax = TaxService.calculateMonthlyTax(taxable);
+                    final taxable =
+                        e.salaryType == 'net' ? gross : e.basicSalary;
+
+                    // ✅ استخدام instance method
+                    final tax = _taxService.calculateMonthlyTax(taxable);
                     final insurance = InsuranceService.calculateInsurance(
                       basicSalary: taxable,
                     );
@@ -124,7 +151,8 @@ class _PayrollPageState extends State<PayrollPage> {
                       DataCell(Text(e.allowances.toStringAsFixed(2))),
                       DataCell(Text(e.deductions.toStringAsFixed(2))),
                       DataCell(Text(tax.toStringAsFixed(2))),
-                      DataCell(Text(insurance['employee_share']!.toStringAsFixed(2))),
+                      DataCell(Text(
+                          insurance['employee_share']!.toStringAsFixed(2))),
                       DataCell(Text(net.toStringAsFixed(2))),
                       DataCell(Text(
                         e.paymentMethod == 'cash' ? 'cash'.tr() : 'bank'.tr(),

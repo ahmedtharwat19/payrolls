@@ -35,7 +35,11 @@ class ImportAttendancePage extends StatelessWidget {
         final lateMinutes =
             double.tryParse(row[2]?.value.toString() ?? '0') ?? 0;
 
-        controller.updateAttendanceByName(name!, overtime, lateMinutes);
+        controller.updateAttendanceByName(name!, {
+          'overtime': overtime,
+          'lateMinutes': lateMinutes,
+          'date': DateTime.now().toIso8601String(),
+        });
       }
 
       ScaffoldMessenger.of(context).showSnackBar(

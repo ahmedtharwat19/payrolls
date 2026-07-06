@@ -1,26 +1,61 @@
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+// lib/database/employee_storage.dart
+
+import 'package:sqflite/sqflite.dart';
 import '../models/employee_model.dart';
+import 'app_database.dart';
 
 class EmployeeStorage {
-  static const _key = 'employees';
+  final AppDatabase _db = AppDatabase();
 
-  static Future<void> saveEmployees(List<Employee> employees) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonList = employees.map((e) => e.toJson()).toList();
-    await prefs.setString(_key, json.encode(jsonList));
+  Future<void> insertEmployee(Employee employee) async {
+    final db = await _db.database;
+    await db.insert(
+      'employees',
+      employee.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
-  static Future<List<Employee>> loadEmployees() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_key);
-    if (jsonString == null) return [];
-    final List decoded = json.decode(jsonString);
-    return decoded.map<Employee>((e) => Employee.fromJson(e)).toList();
+  Future<List<Employee>> getAllEmployees() async {
+    final db = await _db.database;
+    final List<Map<String, dynamic>> maps = await db.query('employees');
+    return maps.map((map) => Employee.fromMap(map)).toList();
   }
 
-  static Future<void> clear() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_key);
+  Future<Employee?> getEmployeeById(String id) async {
+    final db = await _db.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'employees',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (maps.isNotEmpty) {
+      return Employee.fromMap(maps.first);
+    }
+    return null;
+  }
+
+  Future<void> updateEmployee(Employee employee) async {
+    final db = await _db.database;
+    await db.update(
+      'employees',
+      employee.toMap(),
+      where: 'id = ?',
+      whereArgs: [employee.id],
+    );
+  }
+
+  Future<void> deleteEmployee(String id) async {
+    final db = await _db.database;
+    await db.delete(
+      'employees',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> clearAll() async {
+    final db = await _db.database;
+    await db.delete('employees');
   }
 }
