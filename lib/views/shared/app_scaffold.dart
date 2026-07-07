@@ -7,6 +7,7 @@ import '../payroll/payroll_page.dart';
 import '../settings/rules_page.dart';
 import '../settings/settings_page.dart';
 import '../auth/login_page.dart'; // ✅ أضف هذا
+import '../backup/data_tools_page.dart'; // ✅ أدوات البيانات (نسخ احتياطي + استيراد)
 
 class AppScaffold extends StatelessWidget {
   final Widget body;
@@ -91,6 +92,19 @@ class AppScaffold extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) => const AppScaffold(body: ReportsPage()),
+                  ),
+                );
+              },
+            ),
+            // ✅ أدوات البيانات (نسخ احتياطي + استيراد دفعة موظفين)
+            ListTile(
+              leading: const Icon(Icons.storage_outlined),
+              title: Text('data_tools'.tr()),
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AppScaffold(body: DataToolsPage()),
                   ),
                 );
               },
