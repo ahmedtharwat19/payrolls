@@ -1,12 +1,14 @@
 // lib/views/payroll/payroll_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:puresip_payrolls/views/payroll/payment_adjustment_page.dart';
 import '../../controllers/employee_controller.dart';
+// ✅ استيراد النموذج
 import '../../services/tax_service.dart';
 import '../../services/insurance_service.dart';
 import '../../services/pdf_export_service.dart';
+import 'payment_adjustment_page.dart';
 
 class PayrollPage extends StatefulWidget {
   const PayrollPage({super.key});
@@ -26,15 +28,13 @@ class _PayrollPageState extends State<PayrollPage> {
 
   Future<void> _exportPdf() async {
     try {
-      final controller =
-          Provider.of<EmployeeController>(context, listen: false);
+      final controller = Provider.of<EmployeeController>(context, listen: false);
       final employees = controller.employees;
 
       final data = employees.map((e) {
         final gross = e.basicSalary + e.allowances - e.deductions;
         final taxable = e.salaryType == 'net' ? gross : e.basicSalary;
 
-        // ✅ استخدام instance method
         final tax = _taxService.calculateMonthlyTax(taxable);
         final insurance = InsuranceService.calculateInsurance(
           basicSalary: taxable,
@@ -42,7 +42,8 @@ class _PayrollPageState extends State<PayrollPage> {
         final net = gross - tax - insurance['employee_share']!;
 
         return {
-          'name': e.name,
+          // ✅ استخدام nameAr في الـ PDF (ثابت)
+          'name': e.nameAr.isNotEmpty ? e.nameAr : e.nameEn,
           'department': e.department,
           'basicSalary': e.basicSalary,
           'allowances': e.allowances,
@@ -89,7 +90,8 @@ class _PayrollPageState extends State<PayrollPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (_) => const PaymentAdjustmentPage()),
+                  builder: (_) => const PaymentAdjustmentPage(),
+                ),
               );
             },
             tooltip: 'payment_adjustments'.tr(),
@@ -121,23 +123,21 @@ class _PayrollPageState extends State<PayrollPage> {
                 scrollDirection: Axis.vertical,
                 child: DataTable(
                   columnSpacing: 12,
-                  columns: [
-                    const DataColumn(label: Text('Name')),
-                    const DataColumn(label: Text('Department')),
-                    const DataColumn(label: Text('Basic Salary')),
-                    const DataColumn(label: Text('Allowance')),
-                    const DataColumn(label: Text('Deduction')),
-                    const DataColumn(label: Text('Tax')),
-                    const DataColumn(label: Text('Insurance')),
-                    const DataColumn(label: Text('Net Salary')),
-                    const DataColumn(label: Text('Payment Method')),
+                  columns: const [
+                    DataColumn(label: Text('Name')),
+                    DataColumn(label: Text('Department')),
+                    DataColumn(label: Text('Basic Salary')),
+                    DataColumn(label: Text('Allowance')),
+                    DataColumn(label: Text('Deduction')),
+                    DataColumn(label: Text('Tax')),
+                    DataColumn(label: Text('Insurance')),
+                    DataColumn(label: Text('Net Salary')),
+                    DataColumn(label: Text('Payment Method')),
                   ],
                   rows: employees.map((e) {
                     final gross = e.basicSalary + e.allowances - e.deductions;
-                    final taxable =
-                        e.salaryType == 'net' ? gross : e.basicSalary;
+                    final taxable = e.salaryType == 'net' ? gross : e.basicSalary;
 
-                    // ✅ استخدام instance method
                     final tax = _taxService.calculateMonthlyTax(taxable);
                     final insurance = InsuranceService.calculateInsurance(
                       basicSalary: taxable,
@@ -145,14 +145,14 @@ class _PayrollPageState extends State<PayrollPage> {
                     final net = gross - tax - insurance['employee_share']!;
 
                     return DataRow(cells: [
-                      DataCell(Text(e.name)),
+                      // ✅ عرض الاسم حسب اللغة
+                      DataCell(Text(e.getDisplayName(context))),
                       DataCell(Text(e.department)),
                       DataCell(Text(e.basicSalary.toStringAsFixed(2))),
                       DataCell(Text(e.allowances.toStringAsFixed(2))),
                       DataCell(Text(e.deductions.toStringAsFixed(2))),
                       DataCell(Text(tax.toStringAsFixed(2))),
-                      DataCell(Text(
-                          insurance['employee_share']!.toStringAsFixed(2))),
+                      DataCell(Text(insurance['employee_share']!.toStringAsFixed(2))),
                       DataCell(Text(net.toStringAsFixed(2))),
                       DataCell(Text(
                         e.paymentMethod == 'cash' ? 'cash'.tr() : 'bank'.tr(),

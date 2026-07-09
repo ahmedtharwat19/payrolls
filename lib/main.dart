@@ -2,13 +2,13 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // ✅ أضف هذا للـ kIsWeb
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart'; // ✅ أضف
-import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart'; // ✅ أضف
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
-import 'services/tax_service.dart'; // ✅ أضف
+import 'services/tax_service.dart';
 import 'services/insurance_service.dart';
 import 'controllers/employee_controller.dart';
 import 'core/auth/auth_service.dart';
@@ -20,7 +20,6 @@ import 'views/license/license_gate.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ معالجة الأخطاء العامة
   FlutterError.onError = (FlutterErrorDetails details) {
     print('❌ Flutter Error: ${details.exception}');
     if (details.exception.toString().contains('_handledContextLostEvent')) {
@@ -36,7 +35,7 @@ void main() async {
 
   await EasyLocalization.ensureInitialized();
 
-  // ✅ تهيئة قاعدة البيانات للـ Web
+  // تهيئة Sqflite حسب المنصة (بدون أي عمليات ملفات)
   if (kIsWeb) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfiWeb;
@@ -45,11 +44,9 @@ void main() async {
     databaseFactory = databaseFactoryFfi;
   }
 
-  // ✅ تهيئة AuthService
   final authService = AuthService();
   await authService.bootstrap();
 
-  // ✅ تهيئة TaxService و InsuranceService
   final taxService = TaxService();
   await taxService.loadSettings();
 
@@ -59,7 +56,7 @@ void main() async {
   runApp(
     EasyLocalization(
       supportedLocales: const [Locale('en'), Locale('ar')],
-      path: 'assets/lang', // ✅ تصحيح المسار
+      path: 'assets/lang',
       fallbackLocale: const Locale('en'),
       useFallbackTranslations: true,
       child: MyApp(
@@ -87,13 +84,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // ✅ AuthService
         ChangeNotifierProvider.value(value: authService),
-        
-        // ✅ EmployeeController
         ChangeNotifierProvider(create: (_) => EmployeeController()),
-        
-        // ✅ TaxService و InsuranceService
         Provider<TaxService>.value(value: taxService),
         Provider<InsuranceService>.value(value: insuranceService),
       ],

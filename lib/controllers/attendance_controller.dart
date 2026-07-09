@@ -1,6 +1,7 @@
 // lib/controllers/attendance_controller.dart
 
-import 'package:flutter/foundation.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/attendance_model.dart';
 import '../database/attendance_storage.dart';
@@ -34,31 +35,38 @@ class AttendanceController extends ChangeNotifier {
     double overtimeHours = 0,
     double lateMinutes = 0,
     String? date,
+    BuildContext? context,
   }) async {
     try {
-      // البحث عن الموظف
       final employeeController = EmployeeController();
       final employee = employeeController.employees.firstWhere(
-        (e) => e.name.toLowerCase() == name.toLowerCase(),
+        (e) =>
+            e.nameAr.toLowerCase() == name.toLowerCase() ||
+            e.nameEn.toLowerCase() == name.toLowerCase(),
         orElse: () => throw Exception('الموظف "$name" غير موجود'),
       );
+
+      final displayName =
+          context != null ? employee.getDisplayName(context) : employee.nameAr;
+
+      final notes =
+          context != null ? 'imported_from_file'.tr() : 'تم الاستيراد من ملف';
 
       final attendance = Attendance(
         id: const Uuid().v4(),
         employeeId: employee.id,
-        employeeName: employee.name,
+        employeeName: displayName,
         date: DateTime.parse(date ?? DateTime.now().toIso8601String()),
         overtimeHours: overtimeHours,
         lateMinutes: lateMinutes,
-        notes: 'تم الاستيراد من ملف',
+        notes: notes,
       );
 
       await addAttendance(attendance);
-      
-      print('✅ تم تحديث الحضور للموظف: ${employee.name}');
+
+      print('✅ تم تحديث الحضور للموظف: $displayName');
       print('   ⏰ الاوفر تايم: $overtimeHours ساعات');
       print('   ⏱️ التأخير: $lateMinutes دقائق');
-      
     } catch (e) {
       print('❌ خطأ في تحديث الحضور: $e');
       rethrow;
@@ -77,7 +85,7 @@ class AttendanceController extends ChangeNotifier {
 
   /// جلب سجلات الحضور في نطاق تاريخي
   Future<List<Attendance>> getAttendancesByDateRange(
-    DateTime start, 
+    DateTime start,
     DateTime end,
   ) async {
     return await _storage.getAttendancesByDateRange(start, end);
@@ -85,26 +93,26 @@ class AttendanceController extends ChangeNotifier {
 
   /// حساب إجمالي الاوفر تايم لموظف في شهر
   Future<double> getTotalOvertimeByEmployeeAndMonth(
-    String employeeId, 
-    int year, 
+    String employeeId,
+    int year,
     int month,
   ) async {
     return await _storage.getTotalOvertimeByEmployeeAndMonth(
-      employeeId, 
-      year, 
+      employeeId,
+      year,
       month,
     );
   }
 
   /// حساب إجمالي التأخير لموظف في شهر
   Future<double> getTotalLateMinutesByEmployeeAndMonth(
-    String employeeId, 
-    int year, 
+    String employeeId,
+    int year,
     int month,
   ) async {
     return await _storage.getTotalLateMinutesByEmployeeAndMonth(
-      employeeId, 
-      year, 
+      employeeId,
+      year,
       month,
     );
   }

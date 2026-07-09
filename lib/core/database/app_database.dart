@@ -1,23 +1,18 @@
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:path/path.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
-/// ⚠️ ده المصدر الوحيد لقاعدة البيانات في المشروع كله. لازم كل الملفات
-/// (employee_storage, attendance_storage, auth_service, license_service,
-/// payroll_storage, payment_storage...) تستورد من هنا بس. لو فيه ملف تاني
-/// اسمه app_database.dart في مكان تاني بيعمل openDatabase بنفسه، امسحه أو
-/// خليه يعمل export لنفس الكلاس ده - وجود نسختين بيفتحوا نفس ملف قاعدة
-/// البيانات بيسبب تعارض في الجداول حسب مين بيفتح الأول.
+/// ⚠️ ده المصدر الوحيد لقاعدة البيانات في المشروع كله.
 class AppDatabase {
   AppDatabase._();
   static final AppDatabase instance = AppDatabase._();
 
-  /// للتوافق مع كود قديم بينادي AppDatabase() (بدل .instance) -
-  /// بيرجع نفس الـ singleton بالظبط.
   factory AppDatabase() => instance;
 
-  static const int dbVersion = 3;
+  // ✅ رفع الإصدار إلى 4
+  static const int dbVersion = 4;
 
   Database? _db;
 
@@ -30,7 +25,8 @@ class AppDatabase {
   Future<Database> _initDb() async {
     if (kIsWeb) {
       databaseFactory = databaseFactoryFfiWeb;
-      return openDatabase('payrolls.db', version: dbVersion, onCreate: _onCreate, onUpgrade: _onUpgrade);
+      return openDatabase('payrolls.db',
+          version: dbVersion, onCreate: _onCreate, onUpgrade: _onUpgrade);
     }
 
     final isDesktop = defaultTargetPlatform == TargetPlatform.windows ||
@@ -103,11 +99,13 @@ class AppDatabase {
     await db.execute('''
       CREATE TABLE employees (
         id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
+        nameAr TEXT NOT NULL,
+        nameEn TEXT NOT NULL,
         department TEXT,
         jobTitle TEXT,
         nationalId TEXT,
         hireDate TEXT,
+        resignationDate TEXT,   -- ✅ العمود الجديد
         contractType TEXT,
         employeeType TEXT,
         insuranceCode TEXT,
@@ -138,13 +136,12 @@ class AppDatabase {
       )
     ''');
 
-    // ---- الجداول الجديدة: مرتبات شهرية + دفعات الصرف ----
-
     await db.execute('''
       CREATE TABLE payroll_records (
         id TEXT PRIMARY KEY,
         employeeId TEXT NOT NULL,
-        employeeName TEXT NOT NULL,
+        employeeNameAr TEXT NOT NULL,
+        employeeNameEn TEXT NOT NULL,
         month INTEGER NOT NULL,
         year INTEGER NOT NULL,
         basicSalary REAL NOT NULL,
@@ -185,17 +182,17 @@ class AppDatabase {
       ''');
       for (final col in ['bankName', 'bankAccount', 'bankSwift', 'bankIban']) {
         try {
-          await db.execute('ALTER TABLE employees ADD COLUMN $col TEXT DEFAULT \'\'');
-        } catch (_) {
-          // العمود ممكن يكون موجود بالفعل لو جاي من نسخة قديمة تانية
-        }
+          await db.execute(
+              'ALTER TABLE employees ADD COLUMN $col TEXT DEFAULT \'\'');
+        } catch (_) {}
       }
       try {
         await db.execute('''
           CREATE TABLE IF NOT EXISTS attendance (
             id TEXT PRIMARY KEY,
             employeeId TEXT,
-            employeeName TEXT,
+            employeeNameAr TEXT,
+            employeeNameEn TEXT,
             date TEXT,
             overtimeHours REAL,
             lateMinutes REAL,
@@ -210,7 +207,8 @@ class AppDatabase {
         CREATE TABLE IF NOT EXISTS payroll_records (
           id TEXT PRIMARY KEY,
           employeeId TEXT NOT NULL,
-          employeeName TEXT NOT NULL,
+          employeeNameAr TEXT NOT NULL,
+          employeeNameEn TEXT NOT NULL,
           month INTEGER NOT NULL,
           year INTEGER NOT NULL,
           basicSalary REAL NOT NULL,
@@ -237,6 +235,23 @@ class AppDatabase {
           FOREIGN KEY (payrollRecordId) REFERENCES payroll_records(id) ON DELETE CASCADE
         )
       ''');
+    }
+// وفي _onUpgrade:
+    if (oldVersion < 4) {
+      // إضافة resignationDate
+      try {
+        await db
+            .execute('ALTER TABLE employees ADD COLUMN resignationDate TEXT');
+      } catch (_) {}
+    }
+    if (oldVersion < 5) {
+      // إضافة nameEn
+      try {
+        await db.execute(
+            'ALTER TABLE employees ADD COLUMN nameEn TEXT DEFAULT \'\'');
+        // قد نريد أيضاً تغيير name إلى nameAr
+        await db.execute('ALTER TABLE employees RENAME COLUMN name TO nameAr');
+      } catch (_) {}
     }
   }
 }

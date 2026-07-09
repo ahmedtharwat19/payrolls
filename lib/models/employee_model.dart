@@ -1,12 +1,18 @@
 // lib/models/employee_model.dart
 
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+
+
 class Employee {
   final String id;
-  final String name;
+  final String nameAr;
+  final String nameEn;
   final String department;
   final String jobTitle;
   final String nationalId;
   final String hireDate;
+  final String? resignationDate; // ✅ تاريخ ترك الوظيفة (اختياري)
   final String contractType;
   final String employeeType;
   final String insuranceCode;
@@ -26,11 +32,13 @@ class Employee {
 
   Employee({
     required this.id,
-    required this.name,
+    required this.nameAr,
+    required this.nameEn,
     required this.department,
     required this.jobTitle,
     required this.nationalId,
     required this.hireDate,
+    this.resignationDate,
     required this.contractType,
     required this.employeeType,
     required this.insuranceCode,
@@ -48,14 +56,26 @@ class Employee {
     this.bankIban = '',
   });
 
+  String getDisplayName(BuildContext context) {
+    final locale = EasyLocalization.of(context)?.locale;
+    if (locale?.languageCode == 'ar') {
+      return nameAr.isNotEmpty ? nameAr : nameEn;
+    } else {
+      return nameEn.isNotEmpty ? nameEn : nameAr;
+    }
+  }
+  
+  
   factory Employee.fromMap(Map<String, dynamic> map) {
     return Employee(
       id: map['id'] as String,
-      name: map['name'] as String,
+      nameAr: map['nameAr'] as String,
+      nameEn: map['nameEn'] as String,
       department: map['department'] as String,
       jobTitle: map['jobTitle'] as String,
       nationalId: map['nationalId'] as String,
       hireDate: map['hireDate'] as String,
+      resignationDate: map['resignationDate'] as String?,
       contractType: map['contractType'] as String,
       employeeType: map['employeeType'] as String,
       insuranceCode: map['insuranceCode'] as String,
@@ -77,11 +97,13 @@ class Employee {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'name': name,
+      'nameAr': nameAr,
+      'nameEn': nameEn,
       'department': department,
       'jobTitle': jobTitle,
       'nationalId': nationalId,
       'hireDate': hireDate,
+      'resignationDate': resignationDate,
       'contractType': contractType,
       'employeeType': employeeType,
       'insuranceCode': insuranceCode,
@@ -102,11 +124,13 @@ class Employee {
 
   Employee copyWith({
     String? id,
-    String? name,
+    String? nameAr,
+    String? nameEn,
     String? department,
     String? jobTitle,
     String? nationalId,
-    String? hireDate,
+    String? hireDate,     
+    String? resignationDate,
     String? contractType,
     String? employeeType,
     String? insuranceCode,
@@ -125,11 +149,13 @@ class Employee {
   }) {
     return Employee(
       id: id ?? this.id,
-      name: name ?? this.name,
+      nameAr: nameAr ?? this.nameAr,
+      nameEn: nameEn ?? this.nameEn,
       department: department ?? this.department,
       jobTitle: jobTitle ?? this.jobTitle,
       nationalId: nationalId ?? this.nationalId,
       hireDate: hireDate ?? this.hireDate,
+      resignationDate: resignationDate ?? this.resignationDate,
       contractType: contractType ?? this.contractType,
       employeeType: employeeType ?? this.employeeType,
       insuranceCode: insuranceCode ?? this.insuranceCode,

@@ -1,6 +1,6 @@
 // lib/controllers/employee_controller.dart
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../models/employee_model.dart';
 import '../database/employee_storage.dart';
 
@@ -56,16 +56,21 @@ class EmployeeController extends ChangeNotifier {
   /// [name] اسم الموظف
   /// [attendanceData] بيانات الحضور (مثل: { 'date': '2026-07-06', 'status': 'present', 'hours': 8 })
   Future<void> updateAttendanceByName(
-      String name, Map<String, dynamic> attendanceData) async {
-    // البحث عن الموظف بالاسم (حساس لحالة الأحرف)
-    final index = _employees
-        .indexWhere((e) => e.name.toLowerCase() == name.toLowerCase());
-
+    String name,
+    Map<String, dynamic> attendanceData, {
+    BuildContext? context,
+  }) async {
+    final index = _employees.indexWhere(
+      (e) =>
+          e.nameAr.toLowerCase() == name.toLowerCase() ||
+          e.nameEn.toLowerCase() == name.toLowerCase(),
+    );
     if (index == -1) {
       throw Exception('الموظف "$name" غير موجود');
     }
-
     final employee = _employees[index];
+    final displayName =
+        context != null ? employee.getDisplayName(context) : employee.nameAr;
 
     // ✅ هنا يمكنك تحديث بيانات الحضور في نموذج الموظف
     // ولكن الـ Employee الحالي لا يحتوي على حقل attendance،
@@ -92,10 +97,16 @@ class EmployeeController extends ChangeNotifier {
     // (للتجربة فقط - سيُفقد عند إعادة التشغيل)
     // يمكنك استبدال هذا بالكود الفعلي حسب هيكل التطبيق.
 
-    print('✅ تم تحديث الحضور للموظف: ${employee.name}');
+    print('✅ تم تحديث الحضور للموظف: $displayName');
     print('📊 البيانات: $attendanceData');
 
     // إشعار المستخدم بتحديث الواجهة (اختياري)
     notifyListeners();
+  }
+  // lib/controllers/employee_controller.dart
+
+  /// إعادة تحميل قائمة الموظفين من قاعدة البيانات
+  Future<void> refresh() async {
+    await _loadEmployees();
   }
 }
