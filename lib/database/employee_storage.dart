@@ -7,13 +7,30 @@ import 'app_database.dart';
 class EmployeeStorage {
   final AppDatabase _db = AppDatabase();
 
-  Future<void> insertEmployee(Employee employee) async {
+/*   Future<void> insertEmployee(Employee employee) async {
     final db = await _db.database;
     await db.insert(
       'employees',
       employee.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+  } */
+
+  // lib/database/employee_storage.dart
+
+  Future<void> insertEmployee(Employee employee) async {
+    try {
+      final db = await _db.database;
+      await db.insert(
+        'employees',
+        employee.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      print('✅ تم إضافة الموظف: ${employee.nameAr} (${employee.nameEn})');
+    } catch (e) {
+      print('❌ خطأ في الإضافة: $e');
+      rethrow;
+    }
   }
 
   Future<List<Employee>> getAllEmployees() async {

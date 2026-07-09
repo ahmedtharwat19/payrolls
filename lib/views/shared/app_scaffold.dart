@@ -155,6 +155,24 @@ class AppScaffold extends StatelessWidget {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.language),
+            onSelected: (String value) async {
+              if (value == 'ar') {
+                await context.setLocale(const Locale('ar'));
+              } else {
+                await context.setLocale(const Locale('en'));
+              }
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                const PopupMenuItem(value: 'ar', child: Text('العربية')),
+                const PopupMenuItem(value: 'en', child: Text('English')),
+              ];
+            },
+          ),
+        ],
       ),
       body: SafeArea(child: body),
     );

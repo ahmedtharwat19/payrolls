@@ -25,11 +25,19 @@ class LicenseService {
   LicenseService._();
   static final LicenseService instance = LicenseService._();
 
-  static const String _publicKeyBase64 = 'bc5cni8t2LDGdO2rPslHVbpzhX7RQ2XEVkbErPhTQ5Q=';
+  static const String _publicKeyBase64 =
+      'bc5cni8t2LDGdO2rPslHVbpzhX7RQ2XEVkbErPhTQ5Q=';
 
   final _algorithm = Ed25519();
 
-  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+  /// بنشتغل بتوقيت UTC مش وقت الجهاز المحلي - عشان لو المستخدم سافر
+  /// وغيّر المنطقة الزمنية بشكل شرعي (رحلة، تغيير إعدادات بلد)، الساعة
+  /// المحلية ممكن "ترجع" لحظيًا وده كان بيتفسّر غلط كتلاعب. UTC ثابت
+  /// عالميًا ومابيتأثرش بتغيير المنطقة الزمنية خالص.
+  DateTime _dateOnly(DateTime d) {
+    final u = d.toUtc();
+    return DateTime.utc(u.year, u.month, u.day);
+  }
 
   // ---------------------------------------------------------------------
   // تفعيل الجهاز الحالي بكود مربوط بيه من الأساس (خطوة واحدة بس)
@@ -115,7 +123,8 @@ class LicenseService {
     }
 
     final row = rows.first;
-    final license = LicenseData.fromJson(jsonDecode(row['licenseJson'] as String));
+    final license =
+        LicenseData.fromJson(jsonDecode(row['licenseJson'] as String));
 
     // ترخيص دائم (plan == lifetime أو totalDays null) - مفيش عد تنازلي خالص
     if (license.totalDays == null) {
@@ -123,12 +132,14 @@ class LicenseService {
     }
 
     final today = _dateOnly(DateTime.now());
-    final lastCheckDate = _dateOnly(DateTime.parse(row['lastCheckDate'] as String));
+    final lastCheckDate =
+        _dateOnly(DateTime.parse(row['lastCheckDate'] as String));
     int remainingDays = row['remainingDays'] as int;
 
     if (today.isBefore(lastCheckDate)) {
       // تاريخ الجهاز اترجع للخلف - تلاعب واضح. نرفض لحد ما يرجّعوا لقدام.
-      return LicenseCheckResult(false, 'license_error_clock_tampered', remainingDays: remainingDays);
+      return LicenseCheckResult(false, 'license_error_clock_tampered',
+          remainingDays: remainingDays);
     }
 
     if (today.isAfter(lastCheckDate)) {
@@ -146,7 +157,8 @@ class LicenseService {
     }
 
     if (remainingDays <= 0) {
-      return LicenseCheckResult(false, 'license_error_expired', remainingDays: 0);
+      return LicenseCheckResult(false, 'license_error_expired',
+          remainingDays: 0);
     }
 
     return LicenseCheckResult(true, 'ok', remainingDays: remainingDays);
@@ -156,7 +168,8 @@ class LicenseService {
     final db = await AppDatabase.instance.database;
     final rows = await db.query('license', where: 'id = 1');
     if (rows.isEmpty) return null;
-    return LicenseData.fromJson(jsonDecode(rows.first['licenseJson'] as String));
+    return LicenseData.fromJson(
+        jsonDecode(rows.first['licenseJson'] as String));
   }
 
   /// بيرجع عدد الأيام المتبقية من غير ما يعمل أي تحديث (للعرض بس، مثلاً

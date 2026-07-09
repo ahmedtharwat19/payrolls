@@ -40,7 +40,7 @@ class PayrollStorage {
       final record = PayrollRecord(
         id: '${e.id}_${year}_$month',
         employeeId: e.id,
-        employeeName: e.name,
+        employeeName: e.nameEn,
         month: month,
         year: year,
         basicSalary: e.basicSalary,

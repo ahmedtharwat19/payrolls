@@ -1,4 +1,5 @@
 // lib/views/payroll/payment_adjustment_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
@@ -17,7 +18,7 @@ class _PaymentAdjustmentPageState extends State<PaymentAdjustmentPage> {
   final _bonusController = TextEditingController();
   final _deductionController = TextEditingController();
   Employee? _selectedEmployee;
-  String _adjustmentType = 'advance'; // advance, bonus, deduction
+  String _adjustmentType = 'advance';
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +36,6 @@ class _PaymentAdjustmentPageState extends State<PaymentAdjustmentPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // اختيار الموظف
             DropdownButtonFormField<Employee>(
               initialValue: _selectedEmployee,
               decoration: InputDecoration(
@@ -45,7 +45,7 @@ class _PaymentAdjustmentPageState extends State<PaymentAdjustmentPage> {
               items: employees.map((e) {
                 return DropdownMenuItem(
                   value: e,
-                  child: Text(e.name),
+                  child: Text(e.getDisplayName(context)), // ✅ عرض الاسم حسب اللغة
                 );
               }).toList(),
               onChanged: (value) {
@@ -54,7 +54,6 @@ class _PaymentAdjustmentPageState extends State<PaymentAdjustmentPage> {
             ),
             const SizedBox(height: 16),
 
-            // نوع التعديل
             SegmentedButton<String>(
               segments: const [
                 ButtonSegment(value: 'advance', label: Text('Advance')),
@@ -68,7 +67,6 @@ class _PaymentAdjustmentPageState extends State<PaymentAdjustmentPage> {
             ),
             const SizedBox(height: 16),
 
-            // المبلغ
             TextField(
               controller: _adjustmentType == 'advance' 
                   ? _advancePaymentController 
@@ -88,7 +86,6 @@ class _PaymentAdjustmentPageState extends State<PaymentAdjustmentPage> {
             ),
             const SizedBox(height: 16),
 
-            // الملاحظات
             TextField(
               decoration: InputDecoration(
                 labelText: 'notes'.tr(),
@@ -98,7 +95,6 @@ class _PaymentAdjustmentPageState extends State<PaymentAdjustmentPage> {
             ),
             const SizedBox(height: 24),
 
-            // زر الحفظ
             ElevatedButton(
               onPressed: _selectedEmployee == null ? null : _saveAdjustment,
               style: ElevatedButton.styleFrom(
@@ -115,7 +111,6 @@ class _PaymentAdjustmentPageState extends State<PaymentAdjustmentPage> {
   }
 
   void _saveAdjustment() {
-    // حفظ التعديل
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('✅ تم حفظ التعديل بنجاح')),
     );
