@@ -1,4 +1,4 @@
-package com.example.payrolls
+package com.puresip.payrolls
 
 import io.flutter.embedding.android.FlutterActivity
 
