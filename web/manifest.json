@@ -1,6 +1,6 @@
 {
-    "name": "payrolls",
-    "short_name": "payrolls",
+    "name": "puresip_payrolls",
+    "short_name": "puresip_payrolls",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

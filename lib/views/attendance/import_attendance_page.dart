@@ -15,7 +15,7 @@ class ImportAttendancePage extends StatelessWidget {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['xlsx', 'xls', 'csv'],
-      allowMultiple: false,
+    //  allowMultiple: false,
     );
 
     if (result != null && result.files.single.path != null) {
