@@ -25,8 +25,7 @@ class _NavItem {
     required this.icon,
     required this.labelKey,
     required this.pageBuilder,
-    this.color,
-  });
+  }) : color = null;
 }
 
 class AppScaffold extends StatelessWidget {
@@ -84,7 +83,8 @@ class AppScaffold extends StatelessWidget {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, {bool showMenu = true}) {
+  PreferredSizeWidget _buildAppBar(BuildContext context,
+      {bool showMenu = true}) {
     return AppBar(
       title: Text('payroll_system'.tr()),
       backgroundColor: Colors.green,
@@ -133,7 +133,8 @@ class AppScaffold extends StatelessWidget {
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
-            title: Text('logout'.tr(), style: const TextStyle(color: Colors.red)),
+            title:
+                Text('logout'.tr(), style: const TextStyle(color: Colors.red)),
             onTap: () => _logout(context),
           ),
         ],
@@ -150,7 +151,8 @@ class AppScaffold extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.account_balance_wallet, size: 40, color: Colors.white),
+          const Icon(Icons.account_balance_wallet,
+              size: 40, color: Colors.white),
           const SizedBox(width: 12),
           Text(
             'payroll_system'.tr(),
