@@ -11,8 +11,10 @@ class AppDatabase {
 
   factory AppDatabase() => instance;
 
-  // ✅ رفع الإصدار إلى 4
-  static const int dbVersion = 4;
+  // ✅ رفع الإصدار إلى 6 (كان واقف عند 4، فمigration الإصدار 5 بتاعك
+  // (nameEn/nameAr) كان معمول لكنه معمول له trigger أصلاً لأن target
+  // version كان أقل منه - ترقيته لـ 6 هنا خلته يشتغل كمان بالمرة)
+  static const int dbVersion = 6;
 
   Database? _db;
 
@@ -85,7 +87,9 @@ class AppDatabase {
         licenseJson TEXT NOT NULL,
         activatedAt TEXT NOT NULL,
         lastCheckDate TEXT NOT NULL,
-        remainingDays INTEGER
+        remainingDays INTEGER,
+        rawCode TEXT,
+        integritySeal TEXT
       )
     ''');
 
@@ -251,6 +255,14 @@ class AppDatabase {
             'ALTER TABLE employees ADD COLUMN nameEn TEXT DEFAULT \'\'');
         // قد نريد أيضاً تغيير name إلى nameAr
         await db.execute('ALTER TABLE employees RENAME COLUMN name TO nameAr');
+      } catch (_) {}
+    }
+    if (oldVersion < 6) {
+      // ختم التكامل (Integrity Seal) - بيمنع تعديل الترخيص مباشرة من
+      // قاعدة البيانات (SQLite Browser وغيره) من غير ما يتكشف فورًا
+      try {
+        await db.execute('ALTER TABLE license ADD COLUMN rawCode TEXT');
+        await db.execute('ALTER TABLE license ADD COLUMN integritySeal TEXT');
       } catch (_) {}
     }
   }

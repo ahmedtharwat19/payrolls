@@ -209,5 +209,6 @@
   "resignation_date": "Resignation Date",
   "imported_from_file": "Imported from file",
   "name_ar": "Name (Arabic)",
-  "name_en": "Name (English)"
+  "name_en": "Name (English)",
+  "license_error_data_tampered": "Unauthorized modification of license data detected. Please contact support for a new activation code"
 }

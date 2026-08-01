@@ -1,26 +1,23 @@
 import 'dart:convert';
-import 'package:cryptography/cryptography.dart';
+import 'package:crypto/crypto.dart';
+import 'package:cryptography/cryptography.dart' hide Hmac;
 import 'package:sqflite/sqflite.dart';
 import '../database/app_database.dart';
 import 'device_fingerprint.dart';
 import 'license_model.dart';
 
-/// نظام ترخيص أوفلاين بالكامل - نسخة "عد تنازلي مقاوم للتلاعب بالتاريخ".
+/// نظام ترخيص أوفلاين بالكامل - نسخة "عد تنازلي مقاوم للتلاعب بالتاريخ
+/// + ختم تكامل مقاوم لتعديل قاعدة البيانات مباشرة".
 ///
 /// المبدأ:
 /// - كل كود مربوط ببصمة جهاز واحد بعينه من لحظة توليده (مايتنقلش لجهاز تاني).
-/// - بدل ما نعتمد على "تاريخ انتهاء ثابت" (سهل التحايل عليه برجّع ساعة
-///   الجهاز للخلف)، بنحتفظ بـ:
-///     • remainingDays  → عدد الأيام المتبقية فعليًا
-///     • lastCheckDate  → آخر يوم اتفتح فيه البرنامج وتم الفحص
-///   كل مرة البرنامج يفتح:
-///     • لو النهاردة *قبل* lastCheckDate  → التاريخ اتلاعب بيه (رجع للخلف)
-///       → نرفض الفتح لحد ما المستخدم يرجّع التاريخ لقدام تاني.
-///     • لو النهاردة *بعد* lastCheckDate  → ننقص الفرق بالأيام من
-///       remainingDays ونحدّث lastCheckDate = النهاردة.
-///     • لو remainingDays وصل صفر أو أقل → الترخيص انتهى فعلاً.
-/// - كود الديمو (plan == 'demo') لا يُقبل على نفس الجهاز أكتر من مرة،
-///   حتى لو الديمو الأول خلص، عن طريق علامة دائمة (demo_used) في الجهاز.
+/// - بدل "تاريخ انتهاء ثابت"، بنحتفظ بعدّاد أيام (remainingDays) + آخر
+///   يوم اتفحص فيه (lastCheckDate)، ولو الساعة رجعت للخلف نرفض الفتح.
+/// - ⚠️ الإضافة الجديدة: بنخزّن الكود الموقّع الأصلي (rawCode) ونعيد
+///   التحقق من توقيعه في **كل مرة** (مش وقت التفعيل بس)، وبنحط "ختم
+///   تكامل" (HMAC) فوق القيم المتغيّرة. لو حد فتح قاعدة البيانات بأداة
+///   خارجية وغيّر remainingDays أو أي قيمة يدويًا، الختم مش هيتطابق
+///   والبرنامج هيرفض الفتح فورًا - بدل ما يثق أعمى في أي قيمة مخزّنة.
 class LicenseService {
   LicenseService._();
   static final LicenseService instance = LicenseService._();
@@ -30,13 +27,29 @@ class LicenseService {
 
   final _algorithm = Ed25519();
 
-  /// بنشتغل بتوقيت UTC مش وقت الجهاز المحلي - عشان لو المستخدم سافر
-  /// وغيّر المنطقة الزمنية بشكل شرعي (رحلة، تغيير إعدادات بلد)، الساعة
-  /// المحلية ممكن "ترجع" لحظيًا وده كان بيتفسّر غلط كتلاعب. UTC ثابت
-  /// عالميًا ومابيتأثرش بتغيير المنطقة الزمنية خالص.
   DateTime _dateOnly(DateTime d) {
     final u = d.toUtc();
     return DateTime.utc(u.year, u.month, u.day);
+  }
+
+  // ---------------------------------------------------------------------
+  // ختم التكامل: HMAC-SHA256 بمفتاح مشتق من التطبيق نفسه (مش من قاعدة
+  // البيانات) - أي تعديل يدوي في القيم المخزّنة بيكسر التطابق فورًا.
+  // ---------------------------------------------------------------------
+  List<int> get _integrityKey => sha256
+      .convert(utf8.encode('$_publicKeyBase64::payrolls-integrity-v1'))
+      .bytes;
+
+  String _computeSeal({
+    required String rawCode,
+    required String activationDate,
+    required String lastCheckDate,
+    required int? remainingDays,
+    required String deviceFingerprint,
+  }) {
+    final payload =
+        '$rawCode|$activationDate|$lastCheckDate|$remainingDays|$deviceFingerprint';
+    return Hmac(sha256, _integrityKey).convert(utf8.encode(payload)).toString();
   }
 
   // ---------------------------------------------------------------------
@@ -53,7 +66,6 @@ class LicenseService {
 
     final plan = decoded['plan'] as String? ?? 'custom';
 
-    // منع استخدام أكتر من ديمو واحد على نفس الجهاز، حتى لو الأول انتهى
     if (plan == 'demo') {
       final alreadyUsed = await _getMeta('demo_used');
       if (alreadyUsed == 'true') {
@@ -70,7 +82,16 @@ class LicenseService {
     );
 
     final today = _dateOnly(DateTime.now());
+    final todayIso = today.toIso8601String();
     final db = await AppDatabase.instance.database;
+
+    final seal = _computeSeal(
+      rawCode: code,
+      activationDate: todayIso,
+      lastCheckDate: todayIso,
+      remainingDays: license.totalDays,
+      deviceFingerprint: currentFingerprint,
+    );
 
     await db.insert(
       'license',
@@ -78,8 +99,10 @@ class LicenseService {
         'id': 1,
         'licenseJson': jsonEncode(license.toJson()),
         'activatedAt': DateTime.now().toIso8601String(),
-        'lastCheckDate': today.toIso8601String(),
+        'lastCheckDate': todayIso,
         'remainingDays': license.totalDays, // null = دائم
+        'rawCode': code,
+        'integritySeal': seal,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -123,21 +146,51 @@ class LicenseService {
     }
 
     final row = rows.first;
-    final license =
-        LicenseData.fromJson(jsonDecode(row['licenseJson'] as String));
+    final rawCode = row['rawCode'] as String?;
+    final storedSeal = row['integritySeal'] as String?;
 
-    // ترخيص دائم (plan == lifetime أو totalDays null) - مفيش عد تنازلي خالص
-    if (license.totalDays == null) {
-      return const LicenseCheckResult(true, 'ok');
+    // صف قديم من قبل إضافة الختم - محتاج إعادة تفعيل مرة واحدة عشان
+    // ياخد الحماية الجديدة (مفيش طريقة نولّد ختم لبيانات قديمة من غيره).
+    if (rawCode == null || storedSeal == null) {
+      return const LicenseCheckResult(false, 'license_error_not_activated');
+    }
+
+    // إعادة التحقق من توقيع الكود الأصلي - مش هنثق في licenseJson المخزّن
+    final decoded = await verifyCode(rawCode);
+    if (decoded == null) {
+      return const LicenseCheckResult(false, 'license_error_data_tampered');
+    }
+
+    final lastCheckDateRaw = row['lastCheckDate'] as String;
+    final remainingDaysRaw = row['remainingDays'] as int?;
+    final activatedAtRaw = row['activatedAt'] as String;
+    // activationDate المستخدم في الختم وقت التفعيل كان lastCheckDate يوم
+    // التفعيل نفسه (نفس القيمة وقتها) - فبنعيد حساب الختم بنفس القيم
+    // المخزّنة دلوقتي عشان نتأكد إنها لسه زي ما اتسابت.
+    final expectedSeal = _computeSeal(
+      rawCode: rawCode,
+      activationDate: activatedAtRaw,
+      lastCheckDate: lastCheckDateRaw,
+      remainingDays: remainingDaysRaw,
+      deviceFingerprint: fingerprint,
+    );
+
+    if (expectedSeal != storedSeal) {
+      // القيم المخزّنة اتغيّرت من بره البرنامج (تعديل يدوي في قاعدة البيانات)
+      return const LicenseCheckResult(false, 'license_error_data_tampered');
+    }
+
+    final totalDays = decoded['totalDays'] as int?;
+
+    if (totalDays == null) {
+      return const LicenseCheckResult(true, 'ok'); // ترخيص دائم
     }
 
     final today = _dateOnly(DateTime.now());
-    final lastCheckDate =
-        _dateOnly(DateTime.parse(row['lastCheckDate'] as String));
-    int remainingDays = row['remainingDays'] as int;
+    final lastCheckDate = _dateOnly(DateTime.parse(lastCheckDateRaw));
+    int remainingDays = remainingDaysRaw ?? totalDays;
 
     if (today.isBefore(lastCheckDate)) {
-      // تاريخ الجهاز اترجع للخلف - تلاعب واضح. نرفض لحد ما يرجّعوا لقدام.
       return LicenseCheckResult(false, 'license_error_clock_tampered',
           remainingDays: remainingDays);
     }
@@ -146,11 +199,21 @@ class LicenseService {
       final daysPassed = today.difference(lastCheckDate).inDays;
       remainingDays -= daysPassed;
 
+      final newLastCheckIso = today.toIso8601String();
+      final newSeal = _computeSeal(
+        rawCode: rawCode,
+        activationDate: activatedAtRaw,
+        lastCheckDate: newLastCheckIso,
+        remainingDays: remainingDays,
+        deviceFingerprint: fingerprint,
+      );
+
       await db.update(
         'license',
         {
-          'lastCheckDate': today.toIso8601String(),
+          'lastCheckDate': newLastCheckIso,
           'remainingDays': remainingDays,
+          'integritySeal': newSeal, // لازم نحدّث الختم مع كل تحديث شرعي
         },
         where: 'id = 1',
       );
@@ -172,8 +235,6 @@ class LicenseService {
         jsonDecode(rows.first['licenseJson'] as String));
   }
 
-  /// بيرجع عدد الأيام المتبقية من غير ما يعمل أي تحديث (للعرض بس، مثلاً
-  /// في شاشة "معلومات الترخيص"). استخدم validate() لو عايز فحص فعلي.
   Future<int?> getRemainingDaysDisplay() async {
     final db = await AppDatabase.instance.database;
     final rows = await db.query('license', where: 'id = 1');
@@ -183,9 +244,6 @@ class LicenseService {
 
   Future<String> currentDeviceFingerprint() => DeviceFingerprint.get();
 
-  // ---------------------------------------------------------------------
-  // جدول صغير key-value لتخزين أعلام دائمة زي "demo_used"
-  // ---------------------------------------------------------------------
   Future<String?> _getMeta(String key) async {
     final db = await AppDatabase.instance.database;
     final rows = await db.query('app_meta', where: 'key = ?', whereArgs: [key]);
@@ -202,10 +260,6 @@ class LicenseService {
     );
   }
 
-  // ---------------------------------------------------------------------
-  // التحقق من التوقيع الرقمي - القلب الأمني للنظام كله
-  // كود الترخيص شكله: base64(JSON بيانات).base64(توقيع)
-  // ---------------------------------------------------------------------
   Future<Map<String, dynamic>?> verifyCode(String code) async {
     try {
       final parts = code.trim().split('.');
