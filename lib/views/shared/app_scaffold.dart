@@ -73,7 +73,15 @@ class AppScaffold extends StatelessWidget {
   }
 
   void _logout(BuildContext context) {
-    Navigator.of(context).pop();
+    // ⚠️ الـ pop() هنا كانت بتتنفذ دايمًا، سواء فيه حاجة تتقفل ولا لأ.
+    // في وضع الموبايل (Drawer) بتقفل الـ Drawer بس (local history entry).
+    // في وضع الديسكتوب (NavigationRail) مفيش Drawer أصلاً، فكانت بتقفل
+    // الـ Route الوحيد الموجود في الـ stack، وبعدها pushReplacement كان
+    // بيلاقي مفيش Route يستبدله → الكراش. الشرط ده بيخلّيها تتنفذ بس
+    // لما يكون فيه فعلاً حاجة قابلة للـ pop.
+    if (Navigator.canPop(context)) {
+      Navigator.of(context).pop();
+    }
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => LoginPage(

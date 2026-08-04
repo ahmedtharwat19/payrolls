@@ -93,32 +93,41 @@ class LicenseService {
       deviceFingerprint: currentFingerprint,
     );
 
-    await db.insert(
-      'license',
-      {
-        'id': 1,
-        'licenseJson': jsonEncode(license.toJson()),
-        'activatedAt': DateTime.now().toIso8601String(),
-        'lastCheckDate': todayIso,
-        'remainingDays': license.totalDays, // null = دائم
-        'rawCode': code,
-        'integritySeal': seal,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    try {
+      await db.insert(
+        'license',
+        {
+          'id': 1,
+          'licenseJson': jsonEncode(license.toJson()),
+          // ⚠️ لازم تكون نفس القيمة (todayIso) اللي اتحسب بيها الـ seal
+          // فوق، مش DateTime.now().toIso8601String() لوحدها - لأن أي
+          // فرق ولو جزء من الثانية بيخلي الختم مش متطابق من أول تفعيل.
+          'activatedAt': todayIso,
+          'lastCheckDate': todayIso,
+          'remainingDays': license.totalDays, // null = دائم
+          'rawCode': code,
+          'integritySeal': seal,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
 
-    await db.insert(
-      'activated_devices',
-      {
-        'deviceFingerprint': currentFingerprint,
-        'slotNumber': decoded['slotNumber'] ?? 0,
-        'activatedAt': DateTime.now().toIso8601String(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+      await db.insert(
+        'activated_devices',
+        {
+          'deviceFingerprint': currentFingerprint,
+          'slotNumber': decoded['slotNumber'] ?? 0,
+          'activatedAt': DateTime.now().toIso8601String(),
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
 
-    if (plan == 'demo') {
-      await _setMeta('demo_used', 'true');
+      if (plan == 'demo') {
+        await _setMeta('demo_used', 'true');
+      }
+    } catch (e) {
+      // ما نسيبش الخطأ يفضل "صامت" ويوهم المستخدم إن الزرار مش شغال -
+      // زي ما حصل لما كان فيه عمود ناقص في قاعدة البيانات بعد ترقية غير مكتملة.
+      return 'license_error_activation_failed';
     }
 
     return 'ok';

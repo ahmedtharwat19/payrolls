@@ -1,4 +1,4 @@
-import 'package:easy_localization/easy_localization.dart';
+/* import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../services/backup_service.dart';
 import '../../services/bulk_import_service.dart';
@@ -95,6 +95,157 @@ class _DataToolsPageState extends State<DataToolsPage> {
                   title: Text('bulk_import_employees'.tr()),
                   subtitle: Text('bulk_import_desc'.tr()),
                   onTap: _bulkImport,
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String text;
+  const _SectionTitle(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(text, style: Theme.of(context).textTheme.titleMedium),
+    );
+  }
+}
+ */
+
+// lib/views/data_tools/data_tools_page.dart
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:open_file/open_file.dart';
+import '../../services/bulk_import_service.dart';
+
+class DataToolsPage extends StatefulWidget {
+  const DataToolsPage({super.key});
+
+  @override
+  State<DataToolsPage> createState() => _DataToolsPageState();
+}
+
+class _DataToolsPageState extends State<DataToolsPage> {
+  final _importService = BulkImportService();
+  bool _busy = false;
+
+  void _snack(String messageKey) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(messageKey.tr())));
+  }
+
+  // ✅ تصدير Excel (يعرض مسار الملف)
+  Future<void> _exportExcel() async {
+    setState(() => _busy = true);
+    try {
+      final filePath = await _importService.exportEmployeesToExcel();
+      setState(() => _busy = false);
+      if (filePath != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${'export_excel_success'.tr()}\n$filePath'),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+        await OpenFile.open(filePath);
+      } else {
+        _snack('export_excel_error');
+      }
+    } catch (e) {
+      setState(() => _busy = false);
+      if (mounted) _snack('export_excel_error');
+    }
+  }
+
+  // ✅ تحميل النموذج (يعرض مسار الملف)
+  Future<void> _downloadTemplate() async {
+    setState(() => _busy = true);
+    try {
+      final filePath = await BulkImportService.downloadTemplate(context);
+      setState(() => _busy = false);
+      if (filePath != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${'download_template_success'.tr()}\n$filePath'),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+        await OpenFile.open(filePath);
+      } else {
+        _snack('download_template_error');
+      }
+    } catch (e) {
+      setState(() => _busy = false);
+      if (mounted) _snack('download_template_error');
+    }
+  }
+
+  // الاستيراد
+  Future<void> _bulkImport() async {
+    setState(() => _busy = true);
+    final result = await _importService.importFromExcel();
+    setState(() => _busy = false);
+
+    if (result.cancelled) return;
+
+    final msg = '${'import_done'.tr()}: ${result.imported}'
+        '${result.errors.isNotEmpty ? ' - ${'import_errors'.tr()}: ${result.errors.length}' : ''}';
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('data_tools'.tr())),
+      body: _busy
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _SectionTitle('excel_operations'.tr()),
+                ListTile(
+                  leading: const Icon(Icons.download),
+                  title: Text('download_template'.tr()),
+                  subtitle: Text('download_template_desc'.tr()),
+                  onTap: _downloadTemplate,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.upload_file),
+                  title: Text('bulk_import_employees'.tr()),
+                  subtitle: Text('bulk_import_desc'.tr()),
+                  onTap: _bulkImport,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.file_download_outlined),
+                  title: Text('export_excel'.tr()),
+                  subtitle: Text('export_excel_desc'.tr()),
+                  onTap: _exportExcel,
+                ),
+                const Divider(height: 32),
+                _SectionTitle('backup_section'.tr()),
+                ListTile(
+                  leading: const Icon(Icons.save_alt),
+                  title: Text('export_backup'.tr()),
+                  subtitle: Text('export_backup_desc'.tr()),
+                  onTap: () => _snack('backup_exported_ok'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.upload_file),
+                  title: Text('restore_merge'.tr()),
+                  subtitle: Text('restore_merge_desc'.tr()),
+                  onTap: () => _snack('backup_restored_ok'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.restore_page),
+                  title: Text('restore_overwrite'.tr()),
+                  subtitle: Text('restore_overwrite_desc'.tr()),
+                  onTap: () => _snack('backup_restored_ok'),
                 ),
               ],
             ),

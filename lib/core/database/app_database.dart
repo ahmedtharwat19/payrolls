@@ -14,7 +14,7 @@ class AppDatabase {
   // ✅ رفع الإصدار إلى 6 (كان واقف عند 4، فمigration الإصدار 5 بتاعك
   // (nameEn/nameAr) كان معمول لكنه معمول له trigger أصلاً لأن target
   // version كان أقل منه - ترقيته لـ 6 هنا خلته يشتغل كمان بالمرة)
-  static const int dbVersion = 6;
+  static const int dbVersion = 7;
 
   Database? _db;
 
@@ -257,11 +257,19 @@ class AppDatabase {
         await db.execute('ALTER TABLE employees RENAME COLUMN name TO nameAr');
       } catch (_) {}
     }
-    if (oldVersion < 6) {
+    if (oldVersion < 7) {
       // ختم التكامل (Integrity Seal) - بيمنع تعديل الترخيص مباشرة من
       // قاعدة البيانات (SQLite Browser وغيره) من غير ما يتكشف فورًا
+      //
+      // ⚠️ الشرط كان oldVersion < 6 مع dbVersion = 6 في نفس الوقت - يعني
+      // أي جهاز كان مثبّت عليه إصدار سابق شغال بالفعل بـ dbVersion = 6
+      // (قبل إضافة العمودين دول) كان بيفضل عمره ما يشغّل الـ migration ده
+      // لأن sqflite بينادي onUpgrade بس لو oldVersion != newVersion.
+      // رفعنا dbVersion لـ 7 وغيّرنا الشرط عشان الجهاز ده ياخد الترقية.
       try {
         await db.execute('ALTER TABLE license ADD COLUMN rawCode TEXT');
+      } catch (_) {}
+      try {
         await db.execute('ALTER TABLE license ADD COLUMN integritySeal TEXT');
       } catch (_) {}
     }

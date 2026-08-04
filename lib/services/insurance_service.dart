@@ -1,14 +1,15 @@
 // lib/services/insurance_service.dart
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class InsuranceService {
+class InsuranceService with ChangeNotifier {
   static const String _employeeRateKey = 'insurance_employee_rate';
   static const String _companyRateKey = 'insurance_company_rate';
   static const String _minInsuranceKey = 'insurance_min';
   static const String _maxInsuranceKey = 'insurance_max';
 
-  double employeeRate = 0.11;   // 11%
-  double companyRate = 0.12;    // 12%
+  double employeeRate = 0.11; // 11%
+  double companyRate = 0.12; // 12%
   double minInsurance = 1000.0; // 1,000 EGP
   double maxInsurance = 10000.0;
 
@@ -18,6 +19,7 @@ class InsuranceService {
     companyRate = prefs.getDouble(_companyRateKey) ?? 0.12;
     minInsurance = prefs.getDouble(_minInsuranceKey) ?? 1000.0;
     maxInsurance = prefs.getDouble(_maxInsuranceKey) ?? 10000.0;
+    notifyListeners();
   }
 
   Future<void> saveSettings() async {
@@ -26,6 +28,7 @@ class InsuranceService {
     await prefs.setDouble(_companyRateKey, companyRate);
     await prefs.setDouble(_minInsuranceKey, minInsurance);
     await prefs.setDouble(_maxInsuranceKey, maxInsurance);
+    notifyListeners();
   }
 
   // حساب التأمينات
@@ -44,7 +47,7 @@ class InsuranceService {
 
     // التأمين يحسب على الأجر الأساسي بحدود دنيا وقصوى
     double insurableSalary = basicSalary.clamp(minIns, maxIns);
-    
+
     return {
       'employee_share': insurableSalary * empRate,
       'company_share': insurableSalary * compRate,

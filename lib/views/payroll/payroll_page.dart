@@ -24,11 +24,18 @@ class _PayrollPageState extends State<PayrollPage> {
   void initState() {
     super.initState();
     _taxService = context.read<TaxService>();
+    _refreshPayroll();
+  }
+
+  Future<void> _refreshPayroll() async {
+    await _taxService.loadSettings(); // إعادة تحميل الشرائح من التخزين
+    setState(() {}); // إعادة بناء الواجهة
   }
 
   Future<void> _exportPdf() async {
     try {
-      final controller = Provider.of<EmployeeController>(context, listen: false);
+      final controller =
+          Provider.of<EmployeeController>(context, listen: false);
       final employees = controller.employees;
 
       final data = employees.map((e) {
@@ -136,7 +143,8 @@ class _PayrollPageState extends State<PayrollPage> {
                   ],
                   rows: employees.map((e) {
                     final gross = e.basicSalary + e.allowances - e.deductions;
-                    final taxable = e.salaryType == 'net' ? gross : e.basicSalary;
+                    final taxable =
+                        e.salaryType == 'net' ? gross : e.basicSalary;
 
                     final tax = _taxService.calculateMonthlyTax(taxable);
                     final insurance = InsuranceService.calculateInsurance(
@@ -152,7 +160,8 @@ class _PayrollPageState extends State<PayrollPage> {
                       DataCell(Text(e.allowances.toStringAsFixed(2))),
                       DataCell(Text(e.deductions.toStringAsFixed(2))),
                       DataCell(Text(tax.toStringAsFixed(2))),
-                      DataCell(Text(insurance['employee_share']!.toStringAsFixed(2))),
+                      DataCell(Text(
+                          insurance['employee_share']!.toStringAsFixed(2))),
                       DataCell(Text(net.toStringAsFixed(2))),
                       DataCell(Text(
                         e.paymentMethod == 'cash' ? 'cash'.tr() : 'bank'.tr(),

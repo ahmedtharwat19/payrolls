@@ -1,7 +1,8 @@
 // lib/services/tax_service.dart
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class TaxService {
+class TaxService extends ChangeNotifier {
   static const String _taxRateKey = 'tax_rate';
   static const String _overtimeRateKey = 'overtime_rate';
   static const String _latePenaltyKey = 'late_penalty';
@@ -43,15 +44,15 @@ class TaxService {
         };
       }).toList();
     } else {
+      // الشرائح الضريبية المصرية الصحيحة (حسب آخر تعديل 2024)
       taxBrackets = [
-        {'from': 0, 'to': 15000, 'rate': 0.0},
-        {'from': 15000, 'to': 30000, 'rate': 0.025},
-        {'from': 30000, 'to': 45000, 'rate': 0.10},
-        {'from': 45000, 'to': 60000, 'rate': 0.15},
-        {'from': 60000, 'to': 200000, 'rate': 0.20},
-        {'from': 200000, 'to': 400000, 'rate': 0.225},
-        {'from': 400000, 'to': 600000, 'rate': 0.25},
-        {'from': 600000, 'to': null, 'rate': 0.275},
+        {'from': 0, 'to': 40000, 'rate': 0.0}, // 0% (إعفاء)
+        {'from': 40000, 'to': 55000, 'rate': 0.10}, // 10%
+        {'from': 55000, 'to': 70000, 'rate': 0.15}, // 15%
+        {'from': 70000, 'to': 200000, 'rate': 0.20}, // 20%
+        {'from': 200000, 'to': 400000, 'rate': 0.225}, // 22.5%
+        {'from': 400000, 'to': 1200000, 'rate': 0.25}, // 25%
+        {'from': 1200000, 'to': null, 'rate': 0.275}, // 27.5%
       ];
     }
   }
@@ -70,11 +71,11 @@ class TaxService {
       return '${b['from']},${b['to'] ?? 'null'},${b['rate']}';
     }).join('|');
     await prefs.setString(_taxBracketsKey, bracketsStr);
-
-    // حفظ المكافآت والخصومات
-    // يمكن إضافة هذا لاحقاً
+    notifyListeners();
+    // يمكن إضافة حفظ المكافآت والخصومات لاحقاً
   }
 
+  /// حساب الضريبة الشهرية على أساس الدخل الشهري
   double calculateMonthlyTax(double monthlyIncome) {
     final annualIncome = monthlyIncome * 12;
     double annualTax = 0;
@@ -97,12 +98,22 @@ class TaxService {
     return annualTax / 12;
   }
 
+  /// حساب قيمة الساعات الإضافية
   double calculateOvertime(double basicSalary, int hours) {
     final hourlyRate = basicSalary / (30 * 8);
     return hourlyRate * hours * overtimeRate;
   }
 
+  /// حساب غرامة التأخير عن الأيام المتأخرة
   double calculateLatePenalty(int lateDays) {
     return lateDays * latePenalty;
+  }
+
+  /// إعادة تعيين الشرائح إلى القيم المصرية الافتراضية
+  Future<void> resetToEgyptianBrackets() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_taxBracketsKey);
+    await loadSettings(); // إعادة تحميل القيم الافتراضية
+    notifyListeners();
   }
 }
