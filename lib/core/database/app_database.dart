@@ -14,7 +14,7 @@ class AppDatabase {
   // ✅ رفع الإصدار إلى 6 (كان واقف عند 4، فمigration الإصدار 5 بتاعك
   // (nameEn/nameAr) كان معمول لكنه معمول له trigger أصلاً لأن target
   // version كان أقل منه - ترقيته لـ 6 هنا خلته يشتغل كمان بالمرة)
-  static const int dbVersion = 7;
+  static const int dbVersion = 9;
 
   Database? _db;
 
@@ -116,7 +116,9 @@ class AppDatabase {
         insuranceFile TEXT,
         taxFile TEXT,
         basicSalary REAL NOT NULL DEFAULT 0,
+        variableSalary REAL NOT NULL DEFAULT 0,
         allowances REAL NOT NULL DEFAULT 0,
+        expenses REAL NOT NULL DEFAULT 0,
         deductions REAL NOT NULL DEFAULT 0,
         salaryType TEXT NOT NULL DEFAULT 'net',
         paymentMethod TEXT NOT NULL DEFAULT 'cash',
@@ -149,6 +151,7 @@ class AppDatabase {
         month INTEGER NOT NULL,
         year INTEGER NOT NULL,
         basicSalary REAL NOT NULL,
+        variableSalary REAL NOT NULL DEFAULT 0,
         allowances REAL NOT NULL,
         deductions REAL NOT NULL,
         taxAmount REAL NOT NULL DEFAULT 0,
@@ -271,6 +274,25 @@ class AppDatabase {
       } catch (_) {}
       try {
         await db.execute('ALTER TABLE license ADD COLUMN integritySeal TEXT');
+      } catch (_) {}
+    }
+    if (oldVersion < 8) {
+      // إضافة الراتب المتغيّر كجزء منفصل عن الأساسي والبدلات - عشان
+      // مطابقة هيكل الراتب الحقيقي (أساسي + متغيّر + بدلات)
+      try {
+        await db.execute(
+            'ALTER TABLE employees ADD COLUMN variableSalary REAL NOT NULL DEFAULT 0');
+      } catch (_) {}
+      try {
+        await db.execute(
+            'ALTER TABLE payroll_records ADD COLUMN variableSalary REAL NOT NULL DEFAULT 0');
+      } catch (_) {}
+    }
+    if (oldVersion < 9) {
+      // المصروفات - حقل خصم إضافي موجود في ملفات المرتبات الحقيقية
+      try {
+        await db.execute(
+            'ALTER TABLE employees ADD COLUMN expenses REAL NOT NULL DEFAULT 0');
       } catch (_) {}
     }
   }

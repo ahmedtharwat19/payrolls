@@ -19,8 +19,10 @@ class Employee {
   final String insuranceFile;
   final String taxFile;
   final double basicSalary;
+  final double variableSalary;
   final double allowances;
   final double deductions;
+  final double expenses;
   final String salaryType; // 'net' or 'gross'
   final String paymentMethod; // 'cash' or 'bank'
   final bool isActive;
@@ -45,8 +47,10 @@ class Employee {
     required this.insuranceFile,
     required this.taxFile,
     required this.basicSalary,
+    this.variableSalary = 0,
     required this.allowances,
     required this.deductions,
+    this.expenses = 0,
     required this.salaryType,
     required this.paymentMethod,
     this.isActive = true,
@@ -64,6 +68,14 @@ class Employee {
       return nameEn.isNotEmpty ? nameEn : nameAr;
     }
   }
+
+  /// إجمالي المستحق (قبل أي خصومات) = الأساسي + المتغيّر + البدلات
+  double get totalEarned => basicSalary + variableSalary + allowances;
+
+  /// إجمالي المستقطع المسجّل على مستوى بيانات الموظف نفسه (الضريبة
+  /// والتأمينات بتتحسب ديناميكيًا وقت توليد الراتب الشهري، مش هنا)
+  double get totalDeducted => deductions + expenses;
+
   
   
   factory Employee.fromMap(Map<String, dynamic> map) {
@@ -82,7 +94,9 @@ class Employee {
       insuranceFile: map['insuranceFile'] as String,
       taxFile: map['taxFile'] as String,
       basicSalary: (map['basicSalary'] as num).toDouble(),
+      variableSalary: (map['variableSalary'] as num?)?.toDouble() ?? 0,
       allowances: (map['allowances'] as num).toDouble(),
+      expenses: (map['expenses'] as num?)?.toDouble() ?? 0,
       deductions: (map['deductions'] as num).toDouble(),
       salaryType: map['salaryType'] as String,
       paymentMethod: map['paymentMethod'] as String,
@@ -110,7 +124,9 @@ class Employee {
       'insuranceFile': insuranceFile,
       'taxFile': taxFile,
       'basicSalary': basicSalary,
+      'variableSalary': variableSalary,
       'allowances': allowances,
+      'expenses': expenses,
       'deductions': deductions,
       'salaryType': salaryType,
       'paymentMethod': paymentMethod,
@@ -137,8 +153,10 @@ class Employee {
     String? insuranceFile,
     String? taxFile,
     double? basicSalary,
+    double? variableSalary,
     double? allowances,
     double? deductions,
+    double? expenses,
     String? salaryType,
     String? paymentMethod,
     bool? isActive,
@@ -162,7 +180,9 @@ class Employee {
       insuranceFile: insuranceFile ?? this.insuranceFile,
       taxFile: taxFile ?? this.taxFile,
       basicSalary: basicSalary ?? this.basicSalary,
+      variableSalary: variableSalary ?? this.variableSalary,
       allowances: allowances ?? this.allowances,
+      expenses: expenses ?? this.expenses,
       deductions: deductions ?? this.deductions,
       salaryType: salaryType ?? this.salaryType,
       paymentMethod: paymentMethod ?? this.paymentMethod,

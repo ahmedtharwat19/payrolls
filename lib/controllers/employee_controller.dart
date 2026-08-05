@@ -19,6 +19,16 @@ class EmployeeController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// إعادة تحميل الموظفين (متاحة للاستخدام الخارجي)
+  Future<void> loadEmployees() async {
+    await _loadEmployees();
+  }
+
+  /// اسم مستعار لـ loadEmployees
+  Future<void> refresh() async {
+    await _loadEmployees();
+  }
+
   Future<void> addEmployee(Employee employee) async {
     await _storage.insertEmployee(employee);
     _employees.add(employee);
@@ -48,13 +58,7 @@ class EmployeeController extends ChangeNotifier {
     }
   }
 
-  // lib/controllers/employee_controller.dart
-
-// ... الكود الموجود ...
-
   /// تحديث الحضور لموظف بناءً على اسمه
-  /// [name] اسم الموظف
-  /// [attendanceData] بيانات الحضور (مثل: { 'date': '2026-07-06', 'status': 'present', 'hours': 8 })
   Future<void> updateAttendanceByName(
     String name,
     Map<String, dynamic> attendanceData, {
@@ -72,41 +76,9 @@ class EmployeeController extends ChangeNotifier {
     final displayName =
         context != null ? employee.getDisplayName(context) : employee.nameAr;
 
-    // ✅ هنا يمكنك تحديث بيانات الحضور في نموذج الموظف
-    // ولكن الـ Employee الحالي لا يحتوي على حقل attendance،
-    // لذا ستحتاج إما إلى:
-    // 1. إضافة حقل attendance في Employee (تعديل النموذج وقاعدة البيانات)
-    // 2. أو استخدام تخزين منفصل للحضور (مثل جدول attendance في قاعدة البيانات)
-
-    // كمثال سريع، سنقوم بتحديث employee مع إضافة بيانات الحضور كـ Map
-    // (هذا يتطلب تعديل Employee model لقبول حقل attendance)
-
-    // طريقة مؤقتة: استخدام copyWith لإضافة بيانات الحضور (يفترض وجود حقل attendance)
-    // ولكن حقل attendance غير موجود حالياً، لذا سنقوم بتعديل النموذج لاحقاً.
-
-    // إذا كان لديك جدول منفصل للحضور، يمكنك استدعاء الدالة المناسبة هنا.
-
-    // مثال: إذا كان لديك AttendanceStorage، يمكنك استخدامه:
-    // await AttendanceStorage().insertAttendance(employee.id, attendanceData);
-
-    // أو إذا أضفت حقل attendance في Employee:
-    // final updatedEmployee = employee.copyWith(attendance: attendanceData);
-    // await updateEmployee(updatedEmployee);
-
-    // بما أننا لا نملك حقل attendance حالياً، سنقوم بتخزينها مؤقتاً في الذاكرة
-    // (للتجربة فقط - سيُفقد عند إعادة التشغيل)
-    // يمكنك استبدال هذا بالكود الفعلي حسب هيكل التطبيق.
-
     print('✅ تم تحديث الحضور للموظف: $displayName');
     print('📊 البيانات: $attendanceData');
 
-    // إشعار المستخدم بتحديث الواجهة (اختياري)
     notifyListeners();
-  }
-  // lib/controllers/employee_controller.dart
-
-  /// إعادة تحميل قائمة الموظفين من قاعدة البيانات
-  Future<void> refresh() async {
-    await _loadEmployees();
   }
 }

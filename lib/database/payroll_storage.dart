@@ -32,7 +32,7 @@ class PayrollStorage {
         continue;
       }
 
-      final gross = e.basicSalary + e.allowances - e.deductions;
+      final gross = e.basicSalary + e.variableSalary + e.allowances - e.deductions;
       final tax = calculateTax(e);
       final insurance = calculateInsurance(e);
       final net = gross - tax - insurance;
@@ -40,10 +40,12 @@ class PayrollStorage {
       final record = PayrollRecord(
         id: '${e.id}_${year}_$month',
         employeeId: e.id,
-        employeeName: e.nameEn,
+        employeeNameAr: e.nameAr,
+        employeeNameEn: e.nameEn,
         month: month,
         year: year,
         basicSalary: e.basicSalary,
+        variableSalary: e.variableSalary,
         allowances: e.allowances,
         deductions: e.deductions,
         taxAmount: tax,
@@ -70,7 +72,7 @@ class PayrollStorage {
       'payroll_records',
       where: 'month = ? AND year = ?',
       whereArgs: [month, year],
-      orderBy: 'employeeName ASC',
+      orderBy: 'employeeNameAr ASC',
     );
     return rows.map((r) => PayrollRecord.fromMap(r)).toList();
   }
