@@ -15,11 +15,11 @@ class ImportAttendancePage extends StatelessWidget {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['xlsx', 'xls', 'csv'],
-    //  allowMultiple: false,
+      //  allowMultiple: false,
     );
 
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
+    if (result.single.path != null) {
+      final file = File(result.single.path!);
       final bytes = file.readAsBytesSync();
       final excel = Excel.decodeBytes(bytes);
 

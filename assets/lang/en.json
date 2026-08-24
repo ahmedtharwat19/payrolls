@@ -1,4 +1,8 @@
 {
+  "license_pick_file_button": "Pick License File",
+  "license_advanced_paste_toggle": "Advanced Paste",
+  "license_start_demo_button": "Try for a month",
+  "license_or_divider": "Or",
   "month": "Month",
   "year": "Year",
   "generate": "Generate",

@@ -1940,26 +1940,13 @@ class BulkImportService {
         withData: true,
       );
 
-      if (result == null) {
-        return const BulkImportResult(
-          imported: 0,
-          errors: [],
-          cancelled: true,
-          messageKey: 'import_cancelled',
-        );
-      }
+// قديم:
+//   final file = result.files.single;
+//   final fileBytes = file.bytes;   // ⚠️ .bytes deprecated + result.files غير موجودة
 
-      final file = result.files.single;
-      final fileBytes = file.bytes;
-
-      if (fileBytes == null) {
-        return const BulkImportResult(
-          imported: 0,
-          errors: [],
-          cancelled: false,
-          messageKey: 'import_error_empty_file',
-        );
-      }
+// جديد:
+      final file = result.single; // بدل result.files.single
+      final fileBytes = await file.readAsBytes();
 
       final excel = Excel.decodeBytes(fileBytes);
       final sheet = excel.tables[excel.tables.keys.first];

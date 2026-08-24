@@ -22,7 +22,7 @@ class BackupService {
 
   /// بيصدّر البيانات ويسيب المستخدم يختار مكان الحفظ (USB، جوجل درايف
   /// المتزامن محليًا، أي فولدر تاني بره فولدر التطبيق).
-  Future<String?> exportBackup() async {
+  Future<Uri?> exportBackup() async {
     final db = await AppDatabase.instance.database;
     final data = <String, dynamic>{};
 
@@ -42,7 +42,7 @@ class BackupService {
     final fileName =
         'payrolls_backup_${DateTime.now().toIso8601String().split('T').first}.json';
 
-    final String? savedPath = await FilePicker.saveFile(
+    final Uri? savedPath = await FilePicker.saveFile(
       dialogTitle: 'حفظ النسخة الاحتياطية',
       fileName: fileName,
       bytes: bytes,
@@ -99,18 +99,14 @@ class BackupService {
     }
   }
  */
-Future<BackupRestoreResult> restoreBackup({bool merge = true}) async {
+  Future<BackupRestoreResult> restoreBackup({bool merge = true}) async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['json'],
     );
 
-    if (result == null) {
-      return BackupRestoreResult(success: false, message: 'backup_cancelled');
-    }
-
     try {
-      final file = result.files.single;
+      final file = result.single;
       // Asynchronously fetch file bytes using the new API
       final fileBytes = await file.readAsBytes();
 
@@ -146,7 +142,6 @@ Future<BackupRestoreResult> restoreBackup({bool merge = true}) async {
           success: false, message: 'backup_restore_failed');
     }
   }
-
 }
 
 class BackupRestoreResult {

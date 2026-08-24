@@ -1,4 +1,8 @@
 {
+    "license_pick_file_button": "اختر ملف الترخيص",
+    "license_advanced_paste_toggle": "لصق متقدم",
+    "license_start_demo_button": "جرّب مجانًا لمدة شهر",
+    "license_or_divider": "أو",
     "month": "الشهر",
     "year": "السنة",
     "generate": "إنشاء",

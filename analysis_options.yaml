@@ -30,3 +30,11 @@ linter:
 analyzer:
   errors:
     avoid_print: ignore # تجاهل تحذيرات print في أدوات CLI
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
