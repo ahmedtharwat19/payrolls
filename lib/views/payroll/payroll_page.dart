@@ -1630,6 +1630,7 @@ class _PayrollPageState extends State<PayrollPage> {
 }
  */
 // lib/views/payroll/payroll_page.dart
+// lib/views/payroll/payroll_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -1639,7 +1640,8 @@ import '../../controllers/employee_controller.dart';
 import '../../database/app_database.dart';
 import '../../models/payroll_record_model.dart';
 import '../../services/tax_service.dart';
-import '../../services/insurance_service.dart';
+import '../../services/payroll_calculator.dart';
+import '../../services/bulk_import_service.dart';
 import '../../services/pdf_export_service.dart';
 import 'payment_adjustment_page.dart';
 
@@ -1691,6 +1693,95 @@ class _PayrollPageState extends State<PayrollPage> {
     }
 
     if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _generatePayroll() async {
+    final now = DateTime.now();
+    int selectedMonth = now.month;
+    int selectedYear = now.year;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('generate_payroll_records'.tr()),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<int>(
+                    initialValue: selectedMonth,
+                    decoration: InputDecoration(labelText: 'month'.tr()),
+                    items: List.generate(12, (i) => i + 1)
+                        .map((m) => DropdownMenuItem(
+                              value: m,
+                              child: Text(m.toString()),
+                            ))
+                        .toList(),
+                    onChanged: (v) => setDialogState(
+                        () => selectedMonth = v ?? selectedMonth),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<int>(
+                    initialValue: selectedYear,
+                    decoration: InputDecoration(labelText: 'year'.tr()),
+                    items: List.generate(6, (i) => now.year - 2 + i)
+                        .map((y) => DropdownMenuItem(
+                              value: y,
+                              child: Text(y.toString()),
+                            ))
+                        .toList(),
+                    onChanged: (v) =>
+                        setDialogState(() => selectedYear = v ?? selectedYear),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: Text('cancel'.tr()),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  child: Text('generate'.tr()),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final importService = BulkImportService();
+      final count = await importService.generatePayrollRecordsFromEmployees(
+        month: selectedMonth,
+        year: selectedYear,
+      );
+
+      await _loadData();
+      if (!mounted) return;
+
+      if (count > 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${'payroll_records_created'.tr()}: $count')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('payroll_records_already_exist'.tr())),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$e')),
+      );
+    }
   }
 
   PayrollRecord? _getLatestPayroll(String employeeId) {
@@ -1764,38 +1855,34 @@ class _PayrollPageState extends State<PayrollPage> {
             'netSalary': payroll.netSalary,
           };
         } else {
-          // حساب يدوي مع تصحيح المضاعفة
+          // حماية من بيانات قديمة تالفة (أساسي == بدلات بسبب الباج القديم)
           double basic = e.basicSalary;
           double allowances = e.allowances;
-          double variable = e.variableSalary;
-
-          // ✅ تصحيح المضاعفة
           if (basic > 0 && basic == allowances) {
             allowances = 0;
           }
 
-          final totalEarned = basic + variable + allowances;
-          final gross = totalEarned - e.deductions;
-          final taxable = e.salaryType == 'net' ? gross : basic;
-          final tax = _taxService.calculateMonthlyTax(taxable);
-          final insurance =
-              InsuranceService.calculateInsurance(basicSalary: taxable);
-          final insuranceShare = insurance['employee_share']!;
-          final totalDeducted = e.deductions + tax + insuranceShare;
-          final net = gross - tax - insuranceShare;
+          final calc = PayrollCalculator.calculate(
+            basicSalary: basic,
+            variableSalary: e.variableSalary,
+            allowances: allowances,
+            deductions: e.deductions,
+            salaryType: e.salaryType,
+            taxService: _taxService,
+          );
 
           return {
             'name': e.nameAr.isNotEmpty ? e.nameAr : e.nameEn,
             'department': e.department,
-            'basicSalary': basic,
-            'variableSalary': variable,
-            'allowances': allowances,
-            'totalEarned': totalEarned,
-            'deductions': e.deductions,
-            'tax': tax,
-            'insurance': insuranceShare,
-            'totalDeducted': totalDeducted,
-            'netSalary': net,
+            'basicSalary': calc.basicSalary,
+            'variableSalary': calc.variableSalary,
+            'allowances': calc.allowances,
+            'totalEarned': calc.totalEarned,
+            'deductions': calc.deductions,
+            'tax': calc.taxAmount,
+            'insurance': calc.insuranceAmount,
+            'totalDeducted': calc.totalDeducted,
+            'netSalary': calc.netSalary,
           };
         }
       }).toList();
@@ -1841,6 +1928,11 @@ class _PayrollPageState extends State<PayrollPage> {
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.playlist_add_check),
+            onPressed: _generatePayroll,
+            tooltip: 'generate_payroll_records'.tr(),
+          ),
           IconButton(
             icon: const Icon(Icons.edit_calendar),
             onPressed: () {
@@ -1948,20 +2040,24 @@ class _PayrollPageState extends State<PayrollPage> {
                               totalEarned = payroll.totalEarned;
                               totalDeducted = payroll.totalDeducted;
                             } else {
-                              // ✅ تصحيح المضاعفة في العرض
+                              // حماية من بيانات قديمة تالفة (أساسي == بدلات)
                               if (basic > 0 && basic == allowances) {
                                 allowances = 0;
                               }
-                              totalEarned = basic + variable + allowances;
-                              final gross = totalEarned - deductions;
-                              final taxable =
-                                  e.salaryType == 'net' ? gross : basic;
-                              tax = _taxService.calculateMonthlyTax(taxable);
-                              final ins = InsuranceService.calculateInsurance(
-                                  basicSalary: taxable);
-                              insurance = ins['employee_share']!;
-                              totalDeducted = deductions + tax + insurance;
-                              net = gross - tax - insurance;
+                              final calc = PayrollCalculator.calculate(
+                                basicSalary: basic,
+                                variableSalary: variable,
+                                allowances: allowances,
+                                deductions: deductions,
+                                salaryType: e.salaryType,
+                                taxService: _taxService,
+                              );
+                              basic = calc.basicSalary;
+                              totalEarned = calc.totalEarned;
+                              tax = calc.taxAmount;
+                              insurance = calc.insuranceAmount;
+                              totalDeducted = calc.totalDeducted;
+                              net = calc.netSalary;
                               monthYear = 'not_specified'.tr();
                             }
 
