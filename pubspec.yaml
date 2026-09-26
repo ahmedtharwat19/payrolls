@@ -75,6 +75,7 @@ dependencies:
   pdf: ^3.12.0
   cryptography: ^2.9.0
   share_plus: ^13.3.0
+  # sqlcipher_flutter_libs: ^0.7.0+eol
 
 dev_dependencies:
   flutter_test:
@@ -113,3 +114,8 @@ flutter:
     - family: NotoSans
       fonts:
         - asset: assets/fonts/NotoSans-Regular.ttf
+
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlcipher

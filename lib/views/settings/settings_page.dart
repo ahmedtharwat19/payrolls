@@ -284,6 +284,7 @@ class _SettingsPageState extends State<SettingsPage> {
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
+import 'package:puresip_payrolls/views/settings/backup_settings_page.dart';
 import '../../services/tax_service.dart';
 import '../../services/insurance_service.dart';
 import '../../core/utils/logger.dart';
@@ -462,6 +463,15 @@ class _SettingsPageState extends State<SettingsPage> {
                       leading: const Icon(Icons.restore, color: Colors.red),
                       title: Text('reset_tax_brackets'.tr()),
                       onTap: _resetToEgyptianBrackets,
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.backup_outlined),
+                      title: Text('backup_settings_title'.tr()),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const BackupSettingsPage()),
+                      ),
                     ),
                   ],
                 ),
