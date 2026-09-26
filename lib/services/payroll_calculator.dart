@@ -73,8 +73,8 @@ class PayrollCalculator {
     required TaxService taxService,
   }) {
     final totalEarned = basicSalary + variableSalary + allowances;
-    const taxableIsBasic = true; // للتوضيح فقط
-    final taxable = taxableIsBasic ? basicSalary : totalEarned;
+    // final taxableIsBasic = true; // للتوضيح فقط
+    final taxable = basicSalary;
     final tax = taxService.calculateMonthlyTax(taxable);
     final insurance = InsuranceService.calculateInsurance(
         basicSalary: taxable)['employee_share']!;
