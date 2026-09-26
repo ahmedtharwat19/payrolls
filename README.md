@@ -1,16 +1,178 @@
-# payrolls
+# PureSip PayRolls
 
-A new Flutter project.
+نظام متكامل لإدارة شؤون الموظفين والمرتبات، مبني بـ Flutter ويعمل على
+**Android / iOS / Windows / macOS / Linux / Web** بنفس الكود، بقاعدة بيانات
+محلية (SQLite) مشفّرة بالكامل - بدون أي اعتماد على إنترنت أو سيرفر خارجي.
 
-## Getting Started
+> A cross-platform (Android/iOS/Windows/macOS/Linux/Web) offline payroll &
+> HR management app built with Flutter, backed by an encrypted local SQLite
+> database.
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+## ✨ المميزات الرئيسية
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- **إدارة الموظفين**: بيانات كاملة (شخصية، وظيفية، تأمينية، ضريبية، بنكية)
+  مع استيراد جماعي من Excel وتصدير.
+- **المرتبات الشهرية**:
+  - توليد رواتب الشهر لكل الموظفين بضغطة زرار (شاشة المرتبات → أيقونة
+    "توليد").
+  - يدعم نوعين من الرواتب لكل موظف:
+    - **Gross (إجمالي)**: الضريبة والتأمينات بتتحسب على الراتب الأساسي
+      وتُخصم من الموظف، زي ما هو متعارف عليه عادةً.
+    - **Net (صافي)**: الرقم المُدخل هو **صافي** المبلغ المتفق إن الموظف
+      يستلمه فعليًا. النظام بيقوم تلقائيًا بـ"تجميع" (gross-up) الراتب -
+      أي زيادته حسابيًا - بحيث بعد خصم الضريبة والتأمينات (اللي بتتحملها
+      الشركة في هذه الحالة) يوصل الموظف **بالظبط** للمبلغ المتفق عليه.
+  - حساب الضريبة حسب الشرائح الضريبية المصرية (قابلة للتعديل من الإعدادات)
+    والتأمينات الاجتماعية (بحدود دنيا وقصوى قابلة للتعديل).
+  - تصدير تقرير المرتبات كـ PDF.
+  - تسجيل دفعات جزئية (صرف على دفعات، كاش/بنك) لكل راتب.
+  - سجل تاريخي لكل رواتب الموظف عبر الشهور.
+- **الحضور والانصراف**: استيراد بيانات الحضور واحتساب التأخير/الإضافي.
+- **التقارير**: تقارير تجميعية (كاش مقابل بنك، إجمالي الرواتب...).
+- **النسخ الاحتياطي والاستيراد الجماعي** (`Data Tools`): تصدير/استرجاع نسخة
+  احتياطية كاملة، وقالب استيراد موظفين من Excel.
+- **صلاحيات وأدوار**: نظام مستخدمين وأدوار وصلاحيات مفصّل (عرض/تعديل/حذف
+  موظف، تشغيل المرتبات، إدارة الإعدادات...).
+- **ترخيص وحماية بالجهاز**: نظام ترخيص أوفلاين بالكامل، كل كود تفعيل مربوط
+  ببصمة جهاز واحد، مع نسخة تجريبية (Demo) محمية من التكرار. التفاصيل في
+  [`INTEGRATION_README.md`](./INTEGRATION_README.md).
+- **دعم لغتين بالكامل**: عربي / إنجليزي عبر `easy_localization`، مع دعم
+  RTL/LTR تلقائي.
+- **قاعدة بيانات مشفّرة**: SQLCipher بمفتاح تشفير مُشتق تلقائيًا من بصمة
+  الجهاز (بدون كلمة سر يدوية).
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+---
+
+## 🧮 منطق حساب الراتب الصافي (Net) بالتفصيل
+
+لأن الموضوع دقيق ومربك أحيانًا، ده شرح مبسّط لما بيحصل لما موظف يكون
+`salaryType = net`:
+
+1. المبلغ المُدخل (أساسي + متغيّر + بدلات) = المبلغ المتفق إن الموظف
+   يستلمه فعليًا كل شهر (الهدف).
+2. النظام بيدور (عن طريق تقريب متتالي/bisection، لأن شرائح الضريبة غير
+   خطية) على "راتب إجمالي" افتراضي بحيث:
+   `الإجمالي − الضريبة عليه − حصة الموظف في التأمينات عليه = المبلغ المتفق عليه`
+3. الفرق بين الإجمالي المحسوب والمبلغ المتفق عليه هو المبلغ اللي **الشركة**
+   بتتحمله كضريبة إضافية (زيادة تلقائية على الراتب الأساسي).
+4. أي استقطاعات إضافية يدوية (سلف، جزاءات...) بتتخصم بعد كده من الصافي
+   بشكل طبيعي.
+
+الكود المسؤول عن ده موجود في مكان واحد فقط عشان يفضل متسق في كل الشاشات:
+`lib/services/payroll_calculation_service.dart`.
+
+---
+
+## 🏗️ البنية التقنية (Tech Stack)
+
+| الغرض | المكتبة/التقنية |
+|---|---|
+| الواجهة | Flutter (Material) |
+| إدارة الحالة | `provider` |
+| قاعدة البيانات | `sqflite` (+ `sqflite_common_ffi` لسطح المكتب/الويب) مع SQLCipher للتشفير |
+| اللغات | `easy_localization` |
+| Excel استيراد/تصدير | `excel`, `file_picker` |
+| تصدير PDF | `pdf`, `printing` |
+| التخزين الآمن | `flutter_secure_storage`, `shared_preferences` |
+| بصمة الجهاز | `device_info_plus` |
+
+---
+
+## 📁 هيكل المشروع (مختصر)
+
+```
+lib/
+├── core/
+│   ├── auth/            # المستخدمين، الأدوار، الصلاحيات
+│   ├── database/        # app_database.dart - المصدر الوحيد لقاعدة البيانات
+│   └── license/         # نظام الترخيص وبصمة الجهاز
+├── controllers/         # EmployeeController وغيره (Provider)
+├── models/              # Employee, PayrollRecord, ...
+├── services/            # TaxService, InsuranceService,
+│                        # PayrollCalculationService, BulkImportService,
+│                        # BackupService, PdfExportService
+├── database/            # طبقات وصول بيانات إضافية (Storage classes)
+└── views/
+    ├── auth/            # تسجيل الدخول
+    ├── license/         # شاشة تفعيل الترخيص
+    ├── employee/        # إدارة الموظفين
+    ├── payroll/         # شاشة المرتبات، التعديلات، السجل التاريخي
+    ├── attendance/       # الحضور والانصراف
+    ├── reports/         # التقارير
+    ├── backup/          # أدوات النسخ الاحتياطي والاستيراد الجماعي
+    ├── settings/        # الإعدادات العامة وقواعد العمل
+    └── tax_settings/    # إعدادات الضريبة والتأمينات
+```
+
+مستندات إضافية للمطورين:
+- [`PAYROLL_FEATURES_README.md`](./PAYROLL_FEATURES_README.md) - تفاصيل
+  دمج مميزات المرتبات والصرف الجزئي والنسخ الاحتياطي.
+- [`INTEGRATION_README.md`](./INTEGRATION_README.md) - تفاصيل نظام
+  الصلاحيات والتراخيص.
+
+---
+
+## 🚀 البدء السريع (Getting Started)
+
+### المتطلبات
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) (Dart >= 3.3.0)
+
+### التثبيت والتشغيل
+```bash
+git clone https://github.com/ahmedtharwat19/payrolls.git
+cd payrolls
+flutter pub get
+flutter run
+```
+
+### التشغيل على منصة معيّنة
+```bash
+flutter run -d chrome     # الويب
+flutter run -d windows    # ويندوز
+flutter run -d macos      # ماك
+flutter run -d linux      # لينكس
+```
+
+### أول تسجيل دخول
+اسم المستخدم `admin` وكلمة السر `admin123` (لازم تتغيّر فورًا بعد أول
+تشغيل فعلي عند أي عميل حقيقي).
+
+### توليد مفاتيح الترخيص (مرة واحدة، للمطوّر فقط)
+```bash
+dart run tools/license_generator.dart keys
+```
+راجع [`INTEGRATION_README.md`](./INTEGRATION_README.md) للتفاصيل الكاملة
+لتفعيل ترخيص عميل جديد.
+
+---
+
+## 🗄️ قاعدة البيانات
+
+المصدر الوحيد لقاعدة البيانات هو `lib/core/database/app_database.dart`
+(ملف `lib/database/app_database.dart` مجرد `export` له، للتوافق مع كود
+قديم). أي ترقية في مخطط الجداول بتتم تلقائيًا عبر `onUpgrade` من غير ما
+تحتاج تمسح بيانات المستخدم.
+
+---
+
+## 🌐 اللغات
+
+النصوص كلها عبر مفاتيح ترجمة في:
+```
+assets/lang/ar.json
+assets/lang/en.json
+```
+لإضافة نص جديد: ضيف المفتاح في الملفين، واستخدمه في الكود بـ
+`'my_key'.tr()`.
+
+---
+
+## ⚠️ ملاحظات هامة
+
+- التطبيق أوفلاين بالكامل عمدًا: لا استرجاع لكلمة سر قاعدة البيانات لو
+  اتنست، ولا سيرفر مركزي للترخيص.
+- النسخة الاحتياطية (`Data Tools`) بتشمل الموظفين والمرتبات والدفعات
+  والحضور فقط - **لا تشمل الترخيص أو المستخدمين/كلمات السر** عمدًا.
+- غيّر باسورد `admin` الافتراضي فورًا في أي بيئة إنتاج حقيقية.
