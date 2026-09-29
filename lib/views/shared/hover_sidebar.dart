@@ -4,18 +4,15 @@
 // ولما الماوس يدخل عليه (hover) يتمدد بسلاسة ويبان اسم كل صفحة، مستوحى
 // من فكرة "CSS hover sidebar" الشائعة، لكن ده تصميم أصلي بـ Flutter
 // مربوط ببيانات التطبيق الفعلية (مش نسخ من أي مصدر خارجي).
+// lib/views/shared/hover_sidebar.dart
 import 'package:flutter/material.dart';
 
 class HoverSidebarItem {
   final IconData icon;
   final String label;
   final int? badgeCount;
-
-  const HoverSidebarItem({
-    required this.icon,
-    required this.label,
-    this.badgeCount,
-  });
+  const HoverSidebarItem(
+      {required this.icon, required this.label, this.badgeCount});
 }
 
 class HoverSidebar extends StatefulWidget {
@@ -48,7 +45,6 @@ class HoverSidebar extends StatefulWidget {
 
 class _HoverSidebarState extends State<HoverSidebar> {
   bool _hovering = false;
-
   static const double _collapsedWidth = 72;
   static const double _expandedWidth = 232;
   static const Duration _duration = Duration(milliseconds: 260);
@@ -160,11 +156,16 @@ class _SidebarTile extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
+                // الأيقونة - دايماً ثابتة 22px
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Icon(icon, size: 22, color: color),
+                    SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: Icon(icon, size: 22, color: color)),
                     if (badgeCount != null && badgeCount! > 0)
                       Positioned(
                         top: -6,
@@ -173,41 +174,33 @@ class _SidebarTile extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 5, vertical: 1),
                           decoration: BoxDecoration(
-                            color: accent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '$badgeCount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                              color: accent,
+                              borderRadius: BorderRadius.circular(10)),
+                          child: Text('$badgeCount',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold)),
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: ClipRect(
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 200),
-                      opacity: expanded ? 1 : 0,
-                      child: Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.clip,
-                        softWrap: false,
-                        style: TextStyle(
+                // ✅ الحل: اعرض المسافة والنص فقط لما يكون مفتوح
+                if (expanded) ...[
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
+                      style: TextStyle(
                           color: color,
                           fontWeight:
-                              selected ? FontWeight.w600 : FontWeight.normal,
-                        ),
-                      ),
+                              selected ? FontWeight.w600 : FontWeight.normal),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
