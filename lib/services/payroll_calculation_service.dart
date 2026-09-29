@@ -1,4 +1,4 @@
-/* // lib/services/payroll_calculation_service.dart
+// lib/services/payroll_calculation_service.dart
 import 'tax_service.dart';
 import 'insurance_service.dart';
 
@@ -58,6 +58,18 @@ class PayrollCalculationService {
     required String salaryType,
     required TaxService taxService,
   }) {
+    // ✅ تصحيح مركزي لمشكلة "تكرار" نفس المبلغ بين الأساسي والبدلات.
+    // بيحصل ده أحيانًا من استيراد بيانات قديمة كانت بتحط الراتب كله في
+    // خانة "البدلات" بالغلط، فبيتم نسخه لخانة الأساسي كحل مؤقت من غير
+    // ما تتصفّر خانة البدلات الأصلية - فيتكرر نفس المبلغ في الحقلين
+    // ويتحسب مرتين في الإجمالي. طالما الأساسي والبدلات بنفس القيمة
+    // بالظبط (وأكبر من صفر)، بنعتبر إن ده نفس الراتب مش راتب + بدل
+    // إضافي، ونصفّر البدلات عشان ميتحسبش مرتين. الفحص ده بيتطبق هنا
+    // (مصدر واحد) عشان يشتغل في كل الشاشات وأثناء توليد الرواتب أيضًا.
+    if (basicSalary > 0 && basicSalary == allowances) {
+      allowances = 0;
+    }
+
     final enteredTotal = basicSalary + variableSalary + allowances;
 
     if (salaryType == 'net') {
@@ -86,9 +98,10 @@ class PayrollCalculationService {
     // ---- النوع "gross": نفس المنطق المستخدم حاليًا في التطبيق ----
     final taxable = basicSalary;
     final tax = taxService.calculateMonthlyTax(taxable);
-    final insurance = InsuranceService.calculateInsurance(
-            basicSalary: taxable)['employee_share'] ??
-        0;
+    final insurance =
+        InsuranceService.calculateInsurance(basicSalary: taxable)[
+                'employee_share'] ??
+            0;
     final grossAfterDeductions = enteredTotal - deductions;
 
     return PayrollCalculationResult(
@@ -116,9 +129,10 @@ class PayrollCalculationService {
 
     double netAt(double gross) {
       final tax = taxService.calculateMonthlyTax(gross);
-      final insurance = InsuranceService.calculateInsurance(
-              basicSalary: gross)['employee_share'] ??
-          0;
+      final insurance =
+          InsuranceService.calculateInsurance(basicSalary: gross)[
+                  'employee_share'] ??
+              0;
       return gross - tax - insurance;
     }
 
@@ -146,9 +160,10 @@ class PayrollCalculationService {
     }
 
     final tax = taxService.calculateMonthlyTax(mid);
-    final insurance = InsuranceService.calculateInsurance(
-            basicSalary: mid)['employee_share'] ??
-        0;
+    final insurance =
+        InsuranceService.calculateInsurance(basicSalary: mid)[
+                'employee_share'] ??
+            0;
     return _GrossUpResult(total: mid, tax: tax, insurance: insurance);
   }
 }
@@ -163,4 +178,3 @@ class _GrossUpResult {
     required this.insurance,
   });
 }
- */

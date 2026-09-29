@@ -1,158 +1,137 @@
 // lib/services/payroll_calculator.dart
+
 import 'tax_service.dart';
 import 'insurance_service.dart';
 
-/// نتيجة احتساب مرتب موظف واحد لشهر واحد.
+/// نتيجة حساب الضريبة والتأمينات لموظف واحد في شهر واحد.
 class PayrollCalculationResult {
-  final double basicSalary;
-  final double variableSalary;
-  final double allowances;
-  final double deductions;
-  final double totalEarned;
-  final double taxAmount;
-  final double insuranceAmount;
-  final double totalDeducted;
-  final double netSalary;
+  /// الوعاء اللي حُسبت عليه الضريبة والتأمين.
+  /// - في حالة "gross": هو نفس الراتب الأساسي المدخل.
+  /// - في حالة "net": هو الراتب المُصعَّد (gross-up) اللي لو خصمنا منه
+  ///   الضريبة والتأمين، هنوصل لصافي = المرتب المتفق عليه بالظبط.
+  final double taxableBase;
+  final double tax;
+  final double insuranceEmployee;
+  final double insuranceCompany;
+
+  /// الصافي بعد الضريبة والتأمين فقط (قبل أي خصومات/سلف شخصية أخرى).
+  final double netAfterTaxAndInsurance;
 
   const PayrollCalculationResult({
-    required this.basicSalary,
-    required this.variableSalary,
-    required this.allowances,
-    required this.deductions,
-    required this.totalEarned,
-    required this.taxAmount,
-    required this.insuranceAmount,
-    required this.totalDeducted,
-    required this.netSalary,
+    required this.taxableBase,
+    required this.tax,
+    required this.insuranceEmployee,
+    required this.insuranceCompany,
+    required this.netAfterTaxAndInsurance,
   });
 }
 
-/// يحسب راتب الموظف مع مراعاة نوع الراتب (صافي/إجمالي)، عشان يبقى نفس
-/// المنطق مستخدم في كل مكان (شاشة المرتبات، تصدير PDF، توليد المرتبات الشهري).
+/// يحسب الضريبة والتأمينات بشكل صحيح حسب نوع الراتب المتفق عليه مع الموظف:
 ///
-/// - **gross**: الضريبة والتأمين يُحسبان على الأساسي فقط، ويُخصمان من إجمالي
-///   المستحق للوصول للصافي. (نفس السلوك الحالي، بدون تغيير).
-/// - **net**: القيمة المدخلة (أساسي + متغير + بدلات) هي الراتب المتفق عليه
-///   ويُفترض أن يصل فعليًا للموظف بالكامل. الشركة هي اللي بتتحمل الضريبة
-///   والتأمين، فبيتم تلقائيًا "تصعيد" (gross-up) الراتب الأساسي بحيث بعد ما
-///   تتحسب الضريبة والتأمين على القيمة المُصعّدة ويتم خصمهم، يوصل الصافي
-///   لنفس القيمة المتفق عليها بالظبط (مع بقاء الخصومات العادية زي السلف تتخصم
-///   من الصافي زي ما هي، لأنها مش جزء من اتفاق الراتب).
+/// - **gross (إجمالي)**: الراتب المدخل هو الوعاء الضريبي، وبيتم خصم الضريبة
+///   والتأمين منه عادي، فيقل صافي الموظف عن الرقم المتفق عليه.
+///
+/// - **net (صافي)**: الراتب المدخل هو المبلغ اللي المفروض يوصل للموظف *بعد*
+///   خصم الضريبة والتأمين. الشركة هنا هي اللي بتتحمل عبء الضريبة، فالنظام
+///   بيرفع (يُصعِّد) الراتب تلقائياً لحد ما بعد خصم الضريبة والتأمين من
+///   الراتب المُصعَّد، يوصل الصافي بالظبط للرقم المتفق عليه.
 class PayrollCalculator {
+  /// حساب الضريبة والتأمين لموظف "gross": الوعاء = الأساسي نفسه.
+  static PayrollCalculationResult calculateGross({
+    required double taxableSalary,
+    required TaxService taxService,
+  }) {
+    final tax = taxService.calculateMonthlyTax(taxableSalary);
+    final ins = InsuranceService.calculateInsurance(basicSalary: taxableSalary);
+    final insEmployee = ins['employee_share']!;
+    return PayrollCalculationResult(
+      taxableBase: taxableSalary,
+      tax: tax,
+      insuranceEmployee: insEmployee,
+      insuranceCompany: ins['company_share']!,
+      netAfterTaxAndInsurance: taxableSalary - tax - insEmployee,
+    );
+  }
+
+  /// حساب "تصعيد" الراتب (net-to-gross) لموظف "net": بيدور بالبحث الثنائي
+  /// (binary search) على وعاء ضريبي بحيث net(taxableBase) == targetNet
+  /// بالظبط. الدالة net(x) = x - tax(x) - insurance(x) متزايدة دايماً مع x
+  /// (لأن أعلى شريحة ضريبية + التأمين مجتمعين أقل من 100%)، فالبحث الثنائي
+  /// مضمون يوصل لنتيجة دقيقة جداً.
+  static PayrollCalculationResult calculateNetToGross({
+    required double targetNet,
+    required TaxService taxService,
+  }) {
+    if (targetNet <= 0) {
+      return const PayrollCalculationResult(
+        taxableBase: 0,
+        tax: 0,
+        insuranceEmployee: 0,
+        insuranceCompany: 0,
+        netAfterTaxAndInsurance: 0,
+      );
+    }
+
+    double low = targetNet;
+    // هامش أمان كبير يغطي حتى أعلى شرائح الضريبة المصرية (27.5%) + التأمين
+    double high = targetNet * 2 + 20000;
+
+    double net(double gross) {
+      final tax = taxService.calculateMonthlyTax(gross);
+      final ins = InsuranceService.calculateInsurance(basicSalary: gross);
+      return gross - tax - ins['employee_share']!;
+    }
+
+    // تأكيد إن الحد الأعلى كافي (net دايماً متزايدة مع gross)
+    while (net(high) < targetNet) {
+      high *= 2;
+    }
+
+    for (int i = 0; i < 60; i++) {
+      final mid = (low + high) / 2;
+      if (net(mid) < targetNet) {
+        low = mid;
+      } else {
+        high = mid;
+      }
+    }
+
+    final gross = high;
+    final tax = taxService.calculateMonthlyTax(gross);
+    final ins = InsuranceService.calculateInsurance(basicSalary: gross);
+    final insEmployee = ins['employee_share']!;
+
+    return PayrollCalculationResult(
+      taxableBase: gross,
+      tax: tax,
+      insuranceEmployee: insEmployee,
+      insuranceCompany: ins['company_share']!,
+      netAfterTaxAndInsurance: gross - tax - insEmployee,
+    );
+  }
+
+  /// نقطة الدخول الموحّدة: بتحدد تلقائياً تستخدم gross ولا net-to-gross
+  /// حسب [salaryType] ('net' أو 'gross').
+  ///
+  /// [taxableSalary] هو الوعاء المستخدم لحالة gross (عادة basicSalary).
+  /// [targetNet] هو الصافي المتفق عليه المستخدم لحالة net (عادة
+  /// basicSalary + variableSalary + allowances، أي إجمالي المستحق قبل
+  /// الخصومات الشخصية).
   static PayrollCalculationResult calculate({
-    required double basicSalary,
-    required double variableSalary,
-    required double allowances,
-    required double deductions,
     required String salaryType,
+    required double taxableSalary,
+    required double targetNet,
     required TaxService taxService,
   }) {
     if (salaryType == 'net') {
-      return _calculateNet(
-        basicSalary: basicSalary,
-        variableSalary: variableSalary,
-        allowances: allowances,
-        deductions: deductions,
+      return calculateNetToGross(
+        targetNet: targetNet,
         taxService: taxService,
       );
     }
-    return _calculateGross(
-      basicSalary: basicSalary,
-      variableSalary: variableSalary,
-      allowances: allowances,
-      deductions: deductions,
+    return calculateGross(
+      taxableSalary: taxableSalary,
       taxService: taxService,
-    );
-  }
-
-  static PayrollCalculationResult _calculateGross({
-    required double basicSalary,
-    required double variableSalary,
-    required double allowances,
-    required double deductions,
-    required TaxService taxService,
-  }) {
-    final totalEarned = basicSalary + variableSalary + allowances;
-    // final taxableIsBasic = true; // للتوضيح فقط
-    final taxable = basicSalary;
-    final tax = taxService.calculateMonthlyTax(taxable);
-    final insurance = InsuranceService.calculateInsurance(
-        basicSalary: taxable)['employee_share']!;
-    final totalDeducted = deductions + tax + insurance;
-    final net = totalEarned - totalDeducted;
-
-    return PayrollCalculationResult(
-      basicSalary: basicSalary,
-      variableSalary: variableSalary,
-      allowances: allowances,
-      deductions: deductions,
-      totalEarned: totalEarned,
-      taxAmount: tax,
-      insuranceAmount: insurance,
-      totalDeducted: totalDeducted,
-      netSalary: net,
-    );
-  }
-
-  static PayrollCalculationResult _calculateNet({
-    required double basicSalary,
-    required double variableSalary,
-    required double allowances,
-    required double deductions,
-    required TaxService taxService,
-  }) {
-    // الراتب المتفق عليه (اللي المفروض الموظف ياخده فعليًا قبل أي سلف/خصومات)
-    final targetNet = basicSalary + variableSalary + allowances;
-
-    double netFor(double candidateBasic) {
-      final earnings = candidateBasic + variableSalary + allowances;
-      final tax = taxService.calculateMonthlyTax(earnings);
-      final insurance = InsuranceService.calculateInsurance(
-          basicSalary: earnings)['employee_share']!;
-      return earnings - tax - insurance;
-    }
-
-    // بحث ثنائي (bisection) لإيجاد الأساسي المُصعّد اللي بيخلي الصافي بعد
-    // الضريبة والتأمين يساوي الراتب المتفق عليه. الدالة netFor تصاعدية دايمًا
-    // (الضريبة والتأمين محدودين بحد أقصى)، فالبحث الثنائي مضمون يتقارب.
-    double grossedUpBasic = basicSalary;
-    if (targetNet > 0) {
-      double lo = basicSalary;
-      double hi = basicSalary <= 0 ? 1 : basicSalary * 2;
-      int guard = 0;
-      while (netFor(hi) < targetNet && guard < 100) {
-        hi *= 2;
-        guard++;
-      }
-      for (int i = 0; i < 60; i++) {
-        final mid = (lo + hi) / 2;
-        if (netFor(mid) < targetNet) {
-          lo = mid;
-        } else {
-          hi = mid;
-        }
-      }
-      grossedUpBasic = hi;
-    }
-
-    final totalEarned = grossedUpBasic + variableSalary + allowances;
-    final taxable = totalEarned; // الضريبة/التأمين على القيمة المُصعّدة كاملة
-    final tax = taxService.calculateMonthlyTax(taxable);
-    final insurance = InsuranceService.calculateInsurance(
-        basicSalary: taxable)['employee_share']!;
-    final totalDeducted = deductions + tax + insurance;
-    final net = totalEarned - totalDeducted; // = targetNet - deductions
-
-    return PayrollCalculationResult(
-      basicSalary: grossedUpBasic,
-      variableSalary: variableSalary,
-      allowances: allowances,
-      deductions: deductions,
-      totalEarned: totalEarned,
-      taxAmount: tax,
-      insuranceAmount: insurance,
-      totalDeducted: totalDeducted,
-      netSalary: net,
     );
   }
 }

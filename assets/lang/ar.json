@@ -1,4 +1,7 @@
 {
+    "key_old": "النص القديم المكتوب سابقاً",
+    "dark_mode": "الوضع الداكن",
+    "light_mode": "الوضع الفاتح",
     "backup_settings_title": "النسخ الاحتياطي",
     "backup_offsite_section_title": "مجلد النسخ الاحتياطي الخارجي",
     "backup_offsite_section_desc": "اختر مجلد بره القرص الحالي (يفضّل جوه OneDrive أو Google Drive) عشان بياناتك تفضل محمية حتى لو الجهاز ده اتعطّل بالكامل.",
@@ -80,6 +83,7 @@
     "tax": "الضريبة",
     "insurance_employee": "التأمين (الموظف)",
     "net_salary": "الراتب الصافي",
+    "gross_salary": "الراتب الإجمالي",
     "payment_method": "طريقة الدفع",
     "cash": "نقدًا",
     "bank": "بنك",

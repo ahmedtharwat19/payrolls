@@ -258,6 +258,7 @@ import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 import 'services/tax_service.dart';
 import 'services/insurance_service.dart';
+import 'core/theme/theme_controller.dart';
 import 'controllers/employee_controller.dart';
 import 'core/auth/auth_service.dart';
 import 'views/employee/employee_page.dart';
@@ -301,6 +302,9 @@ void main() async {
   final insuranceService = InsuranceService();
   await insuranceService.loadSettings();
 
+  final themeController = ThemeController();
+  await themeController.load();
+
   runApp(
     EasyLocalization(
       supportedLocales: const [Locale('en'), Locale('ar')],
@@ -311,6 +315,7 @@ void main() async {
         authService: authService,
         taxService: taxService,
         insuranceService: insuranceService,
+        themeController: themeController,
       ),
     ),
   );
@@ -320,13 +325,41 @@ class MyApp extends StatelessWidget {
   final AuthService authService;
   final TaxService taxService;
   final InsuranceService insuranceService;
+  final ThemeController themeController;
 
   const MyApp({
     super.key,
     required this.authService,
     required this.taxService,
     required this.insuranceService,
+    required this.themeController,
   });
+
+  // ✅ ثيم فاتح (زي ما كان بالظبط)
+  ThemeData _lightTheme() => ThemeData(
+        primarySwatch: Colors.green,
+        useMaterial3: true,
+        fontFamily: 'Cairo-Regular',
+        brightness: Brightness.light,
+      );
+
+  // ✅ ثيم غامق حقيقي - نفس هوية الأخضر بس بألوان مناسبة للوضع الليلي
+  ThemeData _darkTheme() => ThemeData(
+        useMaterial3: true,
+        fontFamily: 'Cairo-Regular',
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.green,
+          brightness: Brightness.dark,
+        ),
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF1B1B1B),
+          foregroundColor: Colors.white,
+        ),
+        cardColor: const Color(0xFF1E1E1E),
+        dialogTheme: const DialogThemeData(backgroundColor: Color(0xFF1E1E1E)),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -336,50 +369,35 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => EmployeeController()),
         ChangeNotifierProvider<TaxService>.value(value: taxService),
         ChangeNotifierProvider<InsuranceService>.value(value: insuranceService),
+        ChangeNotifierProvider<ThemeController>.value(value: themeController),
       ],
-      child: MaterialApp(
-        title: 'PureSip PayRolls',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.green,
-          useMaterial3: true,
-          fontFamily: 'Cairo-Regular',
-          // ✅ إضافة خطوط احتياطية لضمان عرض العربية
-/*           fontFamilyFallback: const [
-            'Tajawal',
-            'NotoSans',
-            'Roboto',
-            'sans-serif'
-          ], */
-/*           textTheme: const TextTheme(
-            bodyLarge: TextStyle(fontFamily: 'Cairo'),
-            bodyMedium: TextStyle(fontFamily: 'Cairo'),
-            titleLarge: TextStyle(fontFamily: 'Cairo'),
-            titleMedium: TextStyle(fontFamily: 'Cairo'),
-            titleSmall: TextStyle(fontFamily: 'Cairo'),
-            labelLarge: TextStyle(fontFamily: 'Cairo'),
-            labelMedium: TextStyle(fontFamily: 'Cairo'),
-            labelSmall: TextStyle(fontFamily: 'Cairo'),
-          ),
-    */
-        ),
-        localizationsDelegates: context.localizationDelegates,
-        supportedLocales: context.supportedLocales,
-        locale: context.locale,
-        localeResolutionCallback: (locale, supportedLocales) {
-          if (locale == null) return const Locale('en');
-          for (var supportedLocale in supportedLocales) {
-            if (supportedLocale.languageCode == locale.languageCode) {
-              return supportedLocale;
-            }
-          }
-          return const Locale('en');
+      child: Consumer<ThemeController>(
+        builder: (context, theme, _) {
+          return MaterialApp(
+            title: 'PureSip PayRolls',
+            debugShowCheckedModeBanner: false,
+            themeMode: theme.mode,
+            theme: _lightTheme(),
+            darkTheme: _darkTheme(),
+            localizationsDelegates: context.localizationDelegates,
+            supportedLocales: context.supportedLocales,
+            locale: context.locale,
+            localeResolutionCallback: (locale, supportedLocales) {
+              if (locale == null) return const Locale('en');
+              for (var supportedLocale in supportedLocales) {
+                if (supportedLocale.languageCode == locale.languageCode) {
+                  return supportedLocale;
+                }
+              }
+              return const Locale('en');
+            },
+            home: const LicenseGate(
+              child: LoginPage(
+                homeAfterLogin: AppScaffold(body: EmployeePage()),
+              ),
+            ),
+          );
         },
-        home: const LicenseGate(
-          child: LoginPage(
-            homeAfterLogin: AppScaffold(body: EmployeePage()),
-          ),
-        ),
       ),
     );
   }

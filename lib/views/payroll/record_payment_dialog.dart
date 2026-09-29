@@ -130,8 +130,9 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:puresip_payrolls/database/payroll_storage.dart';
 import 'package:uuid/uuid.dart';
-import '../../database/payment_storage.dart';
+//import '../../database/payment_storage.dart';
 import '../../models/payroll_record_model.dart';
 import '../../models/salary_payment_model.dart';
 
@@ -159,7 +160,7 @@ class _RecordPaymentDialogState extends State<RecordPaymentDialog> {
   late final TextEditingController _cashCtrl;
   late final TextEditingController _bankCtrl;
   final _notesCtrl = TextEditingController();
-  final _paymentStorage = PaymentStorage();
+  final _paymentStorage = PayrollStorage();
   bool _saving = false;
 
   @override

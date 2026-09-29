@@ -1,4 +1,7 @@
 {
+  "key_old": "Previous text here",
+  "dark_mode": "Dark Mode",
+  "light_mode": "Light Mode",
   "backup_settings_title": "Backup",
   "backup_offsite_section_title": "Offsite Backup Folder",
   "backup_offsite_section_desc": "Choose a folder outside the current drive (preferably inside OneDrive or Google Drive) to keep your data protected even if this device completely fails.",
@@ -47,6 +50,7 @@
   "tax": "Tax",
   "insurance_employee": "Insurance (Employee)",
   "net_salary": "Net Salary",
+  "gross_salary": "Gross Salary",
   "payment_method": "Payment Method",
   "cash": "Cash",
   "bank": "Bank",

@@ -12,6 +12,7 @@ import 'package:puresip_payrolls/main.dart';
 import 'package:puresip_payrolls/services/tax_service.dart';
 import 'package:puresip_payrolls/services/insurance_service.dart';
 import 'package:puresip_payrolls/core/auth/auth_service.dart';
+import 'package:puresip_payrolls/core/theme/theme_controller.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
@@ -19,6 +20,7 @@ void main() {
     final authService = AuthService();
     final taxService = TaxService();
     final insuranceService = InsuranceService();
+    final themeController = ThemeController();
 
     // Build our app and trigger a frame.
     await tester.pumpWidget(
@@ -26,6 +28,7 @@ void main() {
         authService: authService,
         taxService: taxService,
         insuranceService: insuranceService,
+        themeController: themeController,
       ),
     );
 

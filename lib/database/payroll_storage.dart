@@ -1,3 +1,4 @@
+import 'package:puresip_payrolls/models/salary_payment_model.dart';
 import 'package:sqflite/sqflite.dart';
 import '../core/database/app_database.dart';
 import '../models/payroll_record_model.dart';
@@ -5,6 +6,23 @@ import '../models/employee_model.dart';
 
 class PayrollStorage {
   final AppDatabase _db = AppDatabase.instance;
+
+  Future<void> recordPayment(SalaryPayment payment) async {
+    final db = await _db.database;
+    await db.insert('salary_payments', payment.toMap());
+  }
+
+  Future<List<SalaryPayment>> getPaymentsForRecord(
+      String payrollRecordId) async {
+    final db = await _db.database;
+    final rows = await db.query(
+      'salary_payments',
+      where: 'payrollRecordId = ?',
+      whereArgs: [payrollRecordId],
+      orderBy: 'paymentDate ASC',
+    );
+    return rows.map((r) => SalaryPayment.fromMap(r)).toList();
+  }
 
   /// بيولّد راتب شهر معيّن لكل الموظفين النشطين (isActive) دفعة واحدة.
   /// لو راتب الموظف في نفس الشهر/السنة اتولّد قبل كده، بيتم تجاهله (مايتكررش)
@@ -32,7 +50,8 @@ class PayrollStorage {
         continue;
       }
 
-      final gross = e.basicSalary + e.variableSalary + e.allowances - e.deductions;
+      final gross =
+          e.basicSalary + e.variableSalary + e.allowances - e.deductions;
       final tax = calculateTax(e);
       final insurance = calculateInsurance(e);
       final net = gross - tax - insurance;
