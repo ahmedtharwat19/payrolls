@@ -1,0 +1,241 @@
+# ============================================================
+# ✅ إضافات مهمة لمشروع الرواتب
+# ============================================================
+
+# 🔒 ملفات حساسة (الأهم!)
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.env
+*.env.*
+!.env.example
+service_account.json
+*.secret.json
+*.firebase.json
+!firebase.json.example
+
+# 📁 ملفات Firebase
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+firebase_app_id_file.json
+
+# 📊 ملفات قاعدة البيانات
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sql
+*.dump
+*.backup
+
+# 📁 ملفات Excel مؤقتة
+*.xlsx
+*.xls
+*.csv
+!assets/sample_import.xlsx
+
+# 📁 ملفات التصدير
+exports/
+imports/
+temp/
+
+# 🖥️ ملفات النظام
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+._*
+*~
+*.tmp
+*.temp
+
+# 📦 ملفات التوزيع
+*.apk
+*.aab
+*.ipa
+*.dmg
+*.exe
+*.msi
+*.deb
+*.rpm
+
+# 🔧 ملفات IDE الإضافية
+**/workspace.xml
+**/tasks.xml
+**/gradle.xml
+**/vcs.xml
+**/modules.xml
+**/misc.xml
+**/runConfigurations/
+*.swp
+*.swo
+*~
+*.bak
+*.orig
+
+# 📊 تقارير الاختبارات
+test/**/coverage/
+test/**/reports/
+*.test-report.json
+
+# 📁 ملفات المستخدم المؤقتة
+user_data/
+temp_downloads/
+.cache/
+
+# 🔐 SSH Keys (إذا كانت موجودة في المشروع)
+.ssh/
+**/.ssh/
+id_rsa*
+id_ed25519*
+*.ppk
+known_hosts
+
+# 📦 ملفات Lock (باستثناء pubspec.lock)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+Gemfile.lock
+
+# 🗄️ ملفات أرشفة
+*.zip
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.gz
+*.bz2
+*.xz
+
+# 📁 مجلدات المشاريع الفرعية
+node_modules/
+**/node_modules/
+vendor/
+**/vendor/
+packages/
+**/packages/
+
+# 🔍 ملفات الـ Debug
+debug.log
+error_log
+*.log
+*.stacktrace
+*.error
+
+# 📂 ملفات التصدير المؤقتة
+*.tmp.xlsx
+*.tmp.csv
+.temp_import/
+
+# ✅ بيانات المستخدم المحلية
+user_data.json
+local_settings.json
+*.local.json
+
+# 📱 ملفات Android الخاصة
+android/key.properties
+android/app/key.properties
+android/app/upload-keystore.jks
+android/app/debug.keystore
+
+# 📱 ملفات iOS الخاصة
+ios/Runner/GoogleService-Info.plist
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+
+# 🌐 ملفات الويب
+web/favicon.png
+web/*.dart.js
+web/*.wasm
+web/*.js.map
+
+# 🐍 Python (إذا كنت تستخدم سكريبتات)
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.eggs/
+*.egg-info/
+*.egg
+
+# 📦 Gradle (تم إزالة gradlew و gradle-wrapper.jar لأنهم مهمين للبناء)
+**/android/local.properties
+**/android/.gradle/
+
+# 🗑️ ملفات مؤقتة من الحزم
+*.part
+*.freezed.dart
+*.g.dart
+*.config.dart
+*.mocks.dart
+*.mo.dart
+*.reflectable.dart
+
+# ✅ إضافات جديدة لمشروع الرواتب
+INTEGRATION_README.md
+git_commands.txt
+
+# ✅ ملفات البناء المؤقتة
+.dart_tool/
+.flutter-plugins-dependencies
+.vscode/
+android/build/
+build/
+linux/flutter/
+macos/Flutter/
+windows/flutter/
+
+# ============================================================
+# 🔐 التراخيص والأسرار (ملف UTF-8 - لا تضف أسطر بـ PowerShell >> لأنها UTF-16)
+# ============================================================
+license_keys.txt
+keystore.bin
+issued_licenses.jsonl
+.payrolls_admin/
+licenses_output/
+activation_code.txt
+issued_demos.txt
+*.lic
+*.pre_encryption_backup
+*.encrypting_tmp
+build_log.txt
+
+# IDE
+.idea/
+*.iml
+key.properties
+*.jks
+*.keystore
+
+# إضافات محلية
+*.pem
+*.p12
+*.pfx
+*.env
+*.env.*
+!.env.example
+service_account.json
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.backup
+*.apk
+*.aab
+*.ipa
+*.exe
+*.msi
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.log
+*.swp
+*.bak

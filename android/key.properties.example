@@ -1,0 +1,4 @@
+storeFile=/absolute/path/to/payrolls-release.jks
+storePassword=CHANGE_ME
+keyAlias=payrolls
+keyPassword=CHANGE_ME
