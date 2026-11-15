@@ -22,7 +22,8 @@ class Employee {
   final double allowances;
   final double deductions;
   final double expenses;
-  final double fixedInsurance; // ✅ الحقل الجديد للتأمينات الثابتة
+  final double fixedInsurance; // ✅ الحقل للتأمينات الثابتة
+  final bool isInsured; // ✅ الحقل الجديد للمؤمن عليه
   final String salaryType; // 'net' or 'gross'
   final String paymentMethod; // 'cash' or 'bank'
   final bool isActive;
@@ -51,8 +52,8 @@ class Employee {
     required this.allowances,
     required this.deductions,
     this.expenses = 0,
-    this.fixedInsurance =
-        0, // ✅ القيمة الافتراضية 0 (يعني يحسب بالنسبة المئوية)
+    this.fixedInsurance = 0,
+    this.isInsured = true, // ✅ القيمة الافتراضية
     required this.salaryType,
     required this.paymentMethod,
     this.isActive = true,
@@ -71,10 +72,8 @@ class Employee {
     }
   }
 
-  /// إجمالي المستحق (قبل أي خصومات) = الأساسي + المتغيّر + البدلات
   double get totalEarned => basicSalary + variableSalary + allowances;
 
-  /// إجمالي المستقطع المسجّل على مستوى بيانات الموظف نفسه
   double get totalDeducted => deductions + expenses;
 
   factory Employee.fromMap(Map<String, dynamic> map) {
@@ -97,8 +96,8 @@ class Employee {
       allowances: (map['allowances'] as num).toDouble(),
       expenses: (map['expenses'] as num?)?.toDouble() ?? 0,
       deductions: (map['deductions'] as num).toDouble(),
-      // ✅ قراءة التأمينات الثابتة من قاعدة البيانات
       fixedInsurance: (map['fixedInsurance'] as num?)?.toDouble() ?? 0.0,
+      isInsured: (map['isInsured'] as int?) == 1, // ✅ قراءة القيمة
       salaryType: map['salaryType'] as String,
       paymentMethod: map['paymentMethod'] as String,
       isActive: (map['isActive'] as int) == 1,
@@ -129,7 +128,8 @@ class Employee {
       'allowances': allowances,
       'expenses': expenses,
       'deductions': deductions,
-      'fixedInsurance': fixedInsurance, // ✅ حفظ القيمة
+      'fixedInsurance': fixedInsurance,
+      'isInsured': isInsured ? 1 : 0, // ✅ حفظ القيمة
       'salaryType': salaryType,
       'paymentMethod': paymentMethod,
       'isActive': isActive ? 1 : 0,
@@ -159,7 +159,8 @@ class Employee {
     double? allowances,
     double? deductions,
     double? expenses,
-    double? fixedInsurance, // ✅
+    double? fixedInsurance,
+    bool? isInsured, // ✅
     String? salaryType,
     String? paymentMethod,
     bool? isActive,
@@ -187,7 +188,8 @@ class Employee {
       allowances: allowances ?? this.allowances,
       expenses: expenses ?? this.expenses,
       deductions: deductions ?? this.deductions,
-      fixedInsurance: fixedInsurance ?? this.fixedInsurance, // ✅
+      fixedInsurance: fixedInsurance ?? this.fixedInsurance,
+      isInsured: isInsured ?? this.isInsured, // ✅
       salaryType: salaryType ?? this.salaryType,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       isActive: isActive ?? this.isActive,

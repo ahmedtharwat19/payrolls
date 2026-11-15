@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import '../../database/app_database.dart';
 
@@ -55,17 +58,54 @@ class _CompanySettingsPageState extends State<CompanySettingsPage> {
     };
 
     for (var entry in data.entries) {
-      await db.insert(
-        'app_meta',
-        {'key': entry.key, 'value': entry.value},
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await db.insert('app_meta', {'key': entry.key, 'value': entry.value},
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+
+    final newCompanyName = _nameEnCtrl.text.trim().isNotEmpty
+        ? _nameEnCtrl.text.trim()
+        : _nameArCtrl.text.trim();
+
+    if (newCompanyName.isNotEmpty) {
+      final safeName = newCompanyName
+          .replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_')
+          .toLowerCase();
+      final exeDir = p.dirname(Platform.resolvedExecutable);
+      final configFile = File(p.join(exeDir, 'config.json'));
+
+      String currentDbFileName = 'payrolls.db';
+      if (await configFile.exists()) {
+        try {
+          final config = jsonDecode(await configFile.readAsString());
+          if (config['company_db_name'] != null) {
+            currentDbFileName = '${config['company_db_name']}.db';
+          }
+        } catch (_) {}
+      }
+
+      if (currentDbFileName != '$safeName.db') {
+        await configFile
+            .writeAsString(jsonEncode({'company_db_name': safeName}));
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+                'جاري إعادة تشغيل التطبيق لتطبيق اسم قاعدة البيانات الجديد...')));
+
+        await AppDatabase.instance.close();
+
+        await Future.delayed(const Duration(seconds: 2));
+
+        final exePath = Platform.resolvedExecutable;
+        await Process.start(exePath, [],
+            mode: ProcessStartMode.detached, workingDirectory: exeDir);
+        exit(0);
+      }
     }
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم حفظ بيانات الشركة بنجاح')),
-    );
+        const SnackBar(content: Text('تم حفظ بيانات الشركة بنجاح')));
     Navigator.pop(context);
   }
 
@@ -73,10 +113,9 @@ class _CompanySettingsPageState extends State<CompanySettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('بيانات الشركة'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-      ),
+          title: const Text('بيانات الشركة'),
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -89,18 +128,16 @@ class _CompanySettingsPageState extends State<CompanySettingsPage> {
                         color: Colors.green)),
                 const SizedBox(height: 8),
                 TextField(
-                  controller: _nameArCtrl,
-                  decoration: const InputDecoration(
-                      labelText: 'اسم الشركة (عربي)',
-                      border: OutlineInputBorder()),
-                ),
+                    controller: _nameArCtrl,
+                    decoration: const InputDecoration(
+                        labelText: 'اسم الشركة (عربي)',
+                        border: OutlineInputBorder())),
                 const SizedBox(height: 12),
                 TextField(
-                  controller: _addressArCtrl,
-                  decoration: const InputDecoration(
-                      labelText: 'العنوان (عربي)',
-                      border: OutlineInputBorder()),
-                ),
+                    controller: _addressArCtrl,
+                    decoration: const InputDecoration(
+                        labelText: 'العنوان (عربي)',
+                        border: OutlineInputBorder())),
                 const SizedBox(height: 24),
                 const Divider(),
                 const Text('البيانات باللغة الإنجليزية',
@@ -110,18 +147,16 @@ class _CompanySettingsPageState extends State<CompanySettingsPage> {
                         color: Colors.blue)),
                 const SizedBox(height: 8),
                 TextField(
-                  controller: _nameEnCtrl,
-                  decoration: const InputDecoration(
-                      labelText: 'اسم الشركة (إنجليزي)',
-                      border: OutlineInputBorder()),
-                ),
+                    controller: _nameEnCtrl,
+                    decoration: const InputDecoration(
+                        labelText: 'اسم الشركة (إنجليزي)',
+                        border: OutlineInputBorder())),
                 const SizedBox(height: 12),
                 TextField(
-                  controller: _addressEnCtrl,
-                  decoration: const InputDecoration(
-                      labelText: 'العنوان (إنجليزي)',
-                      border: OutlineInputBorder()),
-                ),
+                    controller: _addressEnCtrl,
+                    decoration: const InputDecoration(
+                        labelText: 'العنوان (إنجليزي)',
+                        border: OutlineInputBorder())),
                 const SizedBox(height: 24),
                 const Divider(),
                 const Text('بيانات مشتركة',
@@ -129,17 +164,15 @@ class _CompanySettingsPageState extends State<CompanySettingsPage> {
                         TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
                 TextField(
-                  controller: _phoneCtrl,
-                  decoration: const InputDecoration(
-                      labelText: 'رقم الهاتف', border: OutlineInputBorder()),
-                ),
+                    controller: _phoneCtrl,
+                    decoration: const InputDecoration(
+                        labelText: 'رقم الهاتف', border: OutlineInputBorder())),
                 const SizedBox(height: 12),
                 TextField(
-                  controller: _taxCtrl,
-                  decoration: const InputDecoration(
-                      labelText: 'الرقم الضريبي / السجل التجاري',
-                      border: OutlineInputBorder()),
-                ),
+                    controller: _taxCtrl,
+                    decoration: const InputDecoration(
+                        labelText: 'الرقم الضريبي / السجل التجاري',
+                        border: OutlineInputBorder())),
                 const SizedBox(height: 30),
                 SizedBox(
                   width: double.infinity,

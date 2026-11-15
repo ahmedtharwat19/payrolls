@@ -2,7 +2,6 @@
 import 'tax_service.dart';
 import 'insurance_service.dart';
 
-/// ناتج احتساب راتب شهري لموظف واحد.
 class PayrollBreakdown {
   final double basicSalary;
   final double variableSalary;
@@ -30,12 +29,10 @@ class PayrollBreakdown {
   double get totalDeducted => deductions + taxAmount + insuranceAmount;
 }
 
-/// مصدر واحد لحساب الضريبة والتأمينات والصافي في كل التطبيق.
 class PayrollCalculationService {
   static const int _maxIterations = 100;
   static const double _epsilon = 0.000001;
 
-  /// تقريب لأقرب قرش.
   static double round2(double v) => (v * 100).roundToDouble() / 100;
 
   static PayrollBreakdown calculateFromAmounts({
@@ -45,7 +42,8 @@ class PayrollCalculationService {
     required double deductions,
     required String salaryType,
     required TaxService taxService,
-    double fixedInsurance = 0.0, // ✅ تمت إضافة التأمينات الثابتة هنا
+    double fixedInsurance = 0.0,
+    bool isInsured = true, // ✅ تمت الإضافة
   }) {
     final entered = basicSalary + variableSalary + allowances;
 
@@ -69,16 +67,17 @@ class PayrollCalculationService {
         deductions: deductions,
         entered: entered,
         taxService: taxService,
-        fixedInsurance: fixedInsurance, // ✅ تمرير القيمة
+        fixedInsurance: fixedInsurance,
+        isInsured: isInsured, // ✅ تمرير
       );
     }
 
-    // ---- النوع "gross" ----
     final s = _statutory(
       insurableWage: basicSalary + variableSalary,
       totalEarnings: entered,
       taxService: taxService,
-      fixedInsurance: fixedInsurance, // ✅ تمرير القيمة
+      fixedInsurance: fixedInsurance,
+      isInsured: isInsured, // ✅ تمرير
     );
     final tax = round2(s.tax);
     final ins = round2(s.employeeInsurance);
@@ -102,15 +101,16 @@ class PayrollCalculationService {
     required double deductions,
     required double entered,
     required TaxService taxService,
-    required double fixedInsurance, // ✅ إضافة البارامتر
+    required double fixedInsurance,
+    required bool isInsured, // ✅ إضافة
   }) {
-    // الصافي بعد الضريبة والتأمين لو رفعنا الأساسي بمقدار x.
     double netAfterStatutory(double x) {
       final s = _statutory(
         insurableWage: basicSalary + variableSalary + x,
         totalEarnings: entered + x,
         taxService: taxService,
-        fixedInsurance: fixedInsurance, // ✅ تمرير القيمة
+        fixedInsurance: fixedInsurance,
+        isInsured: isInsured, // ✅ تمرير
       );
       return (entered + x) - s.tax - s.employeeInsurance;
     }
@@ -137,7 +137,8 @@ class PayrollCalculationService {
       insurableWage: basicSalary + variableSalary + x,
       totalEarnings: entered + x,
       taxService: taxService,
-      fixedInsurance: fixedInsurance, // ✅ تمرير القيمة
+      fixedInsurance: fixedInsurance,
+      isInsured: isInsured, // ✅ تمرير
     );
     final tax = round2(s.tax);
     final ins = round2(s.employeeInsurance);
@@ -152,7 +153,6 @@ class PayrollCalculationService {
       insuranceAmount: ins,
       companyInsuranceAmount: round2(s.companyInsurance),
       grossUpAmount: grossUp,
-      // الموظف يستلم المبلغ المتفق عليه بالظبط بعد أي استقطاعات شخصية.
       netSalary: round2(entered - deductions),
     );
   }
@@ -161,11 +161,13 @@ class PayrollCalculationService {
     required double insurableWage,
     required double totalEarnings,
     required TaxService taxService,
-    required double fixedInsurance, // ✅ إضافة البارامتر هنا
+    required double fixedInsurance,
+    required bool isInsured, // ✅ إضافة
   }) {
     final ins = InsuranceService.calculateInsurance(
       basicSalary: insurableWage,
-      fixedInsurance: fixedInsurance, // ✅ تمرير القيمة لدالة التأمينات
+      fixedInsurance: fixedInsurance,
+      isInsured: isInsured, // ✅ تمرير
     );
     final employeeIns = ins['employee_share'] ?? 0;
     final tax = taxService.calculateMonthlyTax(

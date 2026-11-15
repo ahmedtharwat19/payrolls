@@ -1,12 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math'; // ✅ تمت الإضافة للمفتاح العشوائي
+import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // ✅ تمت الإضافة
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import '../license/device_fingerprint.dart';
@@ -17,8 +16,8 @@ class AppDatabase {
 
   factory AppDatabase() => instance;
 
-  // ✅ رفعنا الإصدار لـ 11 عشان الـ Migration يشتغل ويضيف عمود fixedInsurance
-  static const int dbVersion = 11;
+  // ✅ رفعنا الإصدار لـ 12 عشان نضيف حقل isInsured
+  static const int dbVersion = 12;
 
   static const int _maxBackups = 10;
 
@@ -56,6 +55,7 @@ class AppDatabase {
     204,
     215,
   ];
+
   static const List<int> _dbKeySaltPart2 = [
     208,
     143,
@@ -103,7 +103,7 @@ class AppDatabase {
 
   // ✅ 2. المفتاح الجديد (عشوائي ومحفوظ في الويندوز)
   static const _secureStorage = FlutterSecureStorage();
-  static const String _dbKeyStorageKey = 'db_master_key_v2';
+  static const String _dbKeyStorageKey = 'db_master_key_v3';
 
   Future<String> _getOrCreateSecureDbKeyHex() async {
     try {
@@ -134,6 +134,14 @@ class AppDatabase {
     return _db!;
   }
 
+  // ✅ دالة جديدة: لقفل الاتصال بقاعدة البيانات من أي مكان
+  Future<void> close() async {
+    if (_db != null) {
+      await _db!.close();
+      _db = null;
+    }
+  }
+
   Future<Database> _initDb() async {
     if (kIsWeb) {
       databaseFactory = databaseFactoryFfiWeb;
@@ -150,14 +158,34 @@ class AppDatabase {
       databaseFactory = databaseFactoryFfi;
     }
 
+    // ✅ النقطة رقم 1: قاعدة البيانات في نفس مسار التطبيق
     final String dbPath;
     if (isDesktop) {
-      final supportDir = await getApplicationSupportDirectory();
-      dbPath = supportDir.path;
+      dbPath = dirname(Platform.resolvedExecutable);
     } else {
       dbPath = await getDatabasesPath();
     }
-    final path = join(dbPath, 'payrolls.db');
+
+    // ✅ النقطة رقم 2: قراءة اسم الداتابيز من config.json
+    String dbFileName = 'payrolls.db';
+    if (isDesktop) {
+      final configFile = File(join(dbPath, 'config.json'));
+      if (await configFile.exists()) {
+        try {
+          final config = jsonDecode(await configFile.readAsString());
+          if (config['company_db_name'] != null &&
+              config['company_db_name'].toString().isNotEmpty) {
+            final safeName = config['company_db_name']
+                .toString()
+                .replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_')
+                .toLowerCase();
+            dbFileName = '$safeName.db';
+          }
+        } catch (_) {}
+      }
+    }
+
+    final path = join(dbPath, dbFileName);
     _dbFilePath = path;
 
     if (isDesktop) {
@@ -542,7 +570,7 @@ class AppDatabase {
       )
     ''');
 
-    // ✅ تمت إضافة fixedInsurance في الـ CREATE TABLE
+    // ✅ تمت إضافة isInsured في الـ CREATE TABLE
     await db.execute('''
       CREATE TABLE  IF NOT EXISTS employees (
         id TEXT PRIMARY KEY,
@@ -564,6 +592,7 @@ class AppDatabase {
         expenses REAL NOT NULL DEFAULT 0,
         deductions REAL NOT NULL DEFAULT 0,
         fixedInsurance REAL NOT NULL DEFAULT 0,
+        isInsured INTEGER NOT NULL DEFAULT 1,
         salaryType TEXT NOT NULL DEFAULT 'net',
         paymentMethod TEXT NOT NULL DEFAULT 'cash',
         isActive INTEGER NOT NULL DEFAULT 1,
@@ -743,6 +772,14 @@ class AppDatabase {
       try {
         await db.execute(
             'ALTER TABLE employees ADD COLUMN fixedInsurance REAL NOT NULL DEFAULT 0');
+      } catch (_) {}
+    }
+
+    // ✅ إضافة isInsured في الإصدار 12
+    if (oldVersion < 12) {
+      try {
+        await db.execute(
+            'ALTER TABLE employees ADD COLUMN isInsured INTEGER NOT NULL DEFAULT 1');
       } catch (_) {}
     }
   }

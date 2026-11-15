@@ -101,7 +101,6 @@ class _PayrollPageState extends State<PayrollPage> {
     }
   }
 
-  // ✅ 1. الدفع الفردي (تم تعديل النسب لتحسب من الإجمالي)
   Future<void> _showPaymentDialog(Employee e, PayrollRecord? payroll) async {
     if (payroll == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -236,7 +235,6 @@ class _PayrollPageState extends State<PayrollPage> {
     );
   }
 
-  // ✅ 2. الدفع الجماعي
   Future<void> _showBulkPaymentDialog() async {
     final controller = Provider.of<EmployeeController>(context, listen: false);
     final allEmployees = controller.employees;
@@ -367,7 +365,6 @@ class _PayrollPageState extends State<PayrollPage> {
     );
   }
 
-  // ✅ 3. معالجة الدفع الجماعي (تم تعديل منطق النسب)
   Future<void> _processBulkPayment({
     required String target,
     required String type,

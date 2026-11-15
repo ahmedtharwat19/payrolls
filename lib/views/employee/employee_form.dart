@@ -26,7 +26,7 @@ class _EmployeeFormState extends State<EmployeeForm> {
   final _bankAccountController = TextEditingController();
   final _bankSwiftController = TextEditingController();
   final _bankIbanController = TextEditingController();
-  final _fixedInsuranceController = TextEditingController(); // ✅
+  final _fixedInsuranceController = TextEditingController();
 
   final List<String> _departments = [
     'hr',
@@ -59,8 +59,9 @@ class _EmployeeFormState extends State<EmployeeForm> {
       _data['allowances'] = 0.0;
       _data['deductions'] = 0.0;
       _data['isActive'] = true;
+      _data['isInsured'] = true; // ✅ القيمة الافتراضية
 
-      _fixedInsuranceController.text = '0'; // ✅ القيمة الافتراضية
+      _fixedInsuranceController.text = '0';
     }
   }
 
@@ -91,13 +92,13 @@ class _EmployeeFormState extends State<EmployeeForm> {
     _data['bankSwift'] = emp.bankSwift;
     _data['bankIban'] = emp.bankIban;
     _data['isActive'] = emp.isActive;
+    _data['isInsured'] = emp.isInsured; // ✅ تحميل القيمة
 
     _bankNameController.text = emp.bankName;
     _bankAccountController.text = emp.bankAccount;
     _bankSwiftController.text = emp.bankSwift;
     _bankIbanController.text = emp.bankIban;
-    _fixedInsuranceController.text =
-        emp.fixedInsurance.toString(); // ✅ تحميل القيمة
+    _fixedInsuranceController.text = emp.fixedInsurance.toString();
   }
 
   @override
@@ -106,7 +107,7 @@ class _EmployeeFormState extends State<EmployeeForm> {
     _bankAccountController.dispose();
     _bankSwiftController.dispose();
     _bankIbanController.dispose();
-    _fixedInsuranceController.dispose(); // ✅
+    _fixedInsuranceController.dispose();
     super.dispose();
   }
 
@@ -305,7 +306,6 @@ class _EmployeeFormState extends State<EmployeeForm> {
                           _data['basicSalary'] = double.tryParse(v ?? '0') ?? 0,
                     ),
                   ),
-                  // ✅ حقل التأمينات الثابتة الجديد
                   AdaptiveFormField(
                     child: TextFormField(
                       controller: _fixedInsuranceController,
@@ -320,6 +320,21 @@ class _EmployeeFormState extends State<EmployeeForm> {
                       keyboardType: TextInputType.number,
                       onSaved: (v) => _data['fixedInsurance'] =
                           double.tryParse(v ?? '0') ?? 0.0,
+                    ),
+                  ),
+                  // ✅ حقل مؤمن عليه
+                  AdaptiveFormField(
+                    child: SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        _isArabic
+                            ? 'مؤمن عليه (تأمينات اجتماعية)'
+                            : 'Insured (Social Insurance)',
+                      ),
+                      value: _data['isInsured'] ?? true,
+                      onChanged: (val) {
+                        setState(() => _data['isInsured'] = val);
+                      },
                     ),
                   ),
                   AdaptiveFormField(
@@ -572,7 +587,8 @@ class _EmployeeFormState extends State<EmployeeForm> {
       basicSalary: _data['basicSalary'] ?? 0.0,
       allowances: _data['allowances'] ?? 0.0,
       deductions: _data['deductions'] ?? 0.0,
-      fixedInsurance: _data['fixedInsurance'] ?? 0.0, // ✅ الحفظ الجديد
+      fixedInsurance: _data['fixedInsurance'] ?? 0.0,
+      isInsured: _data['isInsured'] ?? true, // ✅ تمرير القيمة
       salaryType: _data['salaryType'] ?? 'net',
       paymentMethod: _data['paymentMethod'] ?? 'cash',
       bankName: _data['bankName'] ?? '',
@@ -581,7 +597,6 @@ class _EmployeeFormState extends State<EmployeeForm> {
       bankIban: _data['bankIban'] ?? '',
       isActive: _data['isActive'] ?? true,
 
-      // ✅ حل المشكلة: لو الموظف موجود بالفعل، احتفظ بقيمه القديمة بدل ما تصفرها
       variableSalary: widget.employee?.variableSalary ?? 0.0,
       expenses: widget.employee?.expenses ?? 0.0,
     );
@@ -591,7 +606,6 @@ class _EmployeeFormState extends State<EmployeeForm> {
     } else {
       controller.updateEmployee(employee);
     }
-    print("SAVING EMPLOYEE: ${employee.toMap()}");
 
     Navigator.pop(context);
   }

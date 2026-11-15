@@ -50,7 +50,6 @@ class InsuranceService with ChangeNotifier {
     notifyListeners();
   }
 
-  /// الأجر التأميني بعد تطبيق الحدّين الأدنى والأقصى.
   static double insurableWage(double wage,
       {double? minInsurance, double? maxInsurance}) {
     final a = minInsurance ?? _activeMin;
@@ -62,27 +61,32 @@ class InsuranceService with ChangeNotifier {
     return wage;
   }
 
-  /// حساب التأمينات على [basicSalary] (الأجر التأميني: الأساسي + المتغيّر).
-  /// ✅ تم إضافة [fixedInsurance] للتعامل مع القيمة الثابتة.
   static Map<String, double> calculateInsurance({
     required double basicSalary,
-    double fixedInsurance = 0.0, // ✅ القيمة الثابتة
+    double fixedInsurance = 0.0,
+    bool isInsured = true, // ✅ أضفنا البارامتر ده
     double? employeeRate,
     double? companyRate,
     double? minInsurance,
     double? maxInsurance,
   }) {
-    // ✅ لو الموظف ليه تأمينات ثابتة، نرجعها فوراً ونتجاهل النسبة
+    // ✅ لو غير مؤمن عليه، التأمينات بصفر
+    if (!isInsured) {
+      return {
+        'employee_share': 0.0,
+        'company_share': 0.0,
+        'insurable_salary': 0.0,
+      };
+    }
+
     if (fixedInsurance > 0) {
       return {
         'employee_share': fixedInsurance,
-        'company_share':
-            0.0, // لو الشركة مش بتدفع حصة له، أو ممكن تتحسب كنسبة من الثابت
+        'company_share': 0.0,
         'insurable_salary': basicSalary,
       };
     }
 
-    // الحساب العادي بالنسبة المئوية
     final empRate = employeeRate ?? _activeEmployeeRate;
     final compRate = companyRate ?? _activeCompanyRate;
 
