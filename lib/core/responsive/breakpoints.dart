@@ -9,7 +9,7 @@
 //   if (context.isDesktop) { ... }
 //   final cols = context.responsiveColumns;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// فئات حجم الشاشة المستخدمة في كل أنحاء التطبيق.
 enum ScreenSize { mobile, tablet, desktop }

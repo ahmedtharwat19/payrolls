@@ -558,9 +558,10 @@ class _EmployeePageState extends State<EmployeePage> {
 
 // lib/views/employee/employee_page.dart
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:puresip_payrolls/services/department_service.dart';
 import '../../controllers/employee_controller.dart';
 import '../../models/employee_model.dart';
 import '../../views/employee/employee_form.dart';
@@ -580,7 +581,7 @@ class _EmployeePageState extends State<EmployeePage> {
   String _filterDepartment = 'all';
   String _filterStatus = 'all';
 
-  final List<String> _departments = [
+/*   final List<String> _departments = [
     'all',
     'hr',
     'it',
@@ -593,6 +594,27 @@ class _EmployeePageState extends State<EmployeePage> {
     'maintenance',
     'purchasing',
   ];
+ */
+
+// في employee_page.dart
+
+// استبدل _departments الثابتة
+  List<String> _departments = ['all'];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDepartments();
+  }
+
+  Future<void> _loadDepartments() async {
+    final depts = await DepartmentService().getAll();
+    if (mounted) {
+      setState(() {
+        _departments = ['all', ...depts];
+      });
+    }
+  }
 
   List<Employee> _getFilteredEmployees(List<Employee> employees) {
     final query = _searchQuery.trim().toLowerCase();

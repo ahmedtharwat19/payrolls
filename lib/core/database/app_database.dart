@@ -1,3 +1,5 @@
+// lib/core/database/app_database.dart
+
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -16,8 +18,8 @@ class AppDatabase {
 
   factory AppDatabase() => instance;
 
-  // ✅ رفعنا الإصدار لـ 12 عشان نضيف حقل isInsured
-  static const int dbVersion = 12;
+  // ✅ الإصدار 15 (يضيف جدول الإجازات)
+  static const int dbVersion = 15;
 
   static const int _maxBackups = 10;
 
@@ -134,12 +136,20 @@ class AppDatabase {
     return _db!;
   }
 
-  // ✅ دالة جديدة: لقفل الاتصال بقاعدة البيانات من أي مكان
+  // ✅ دالة لقفل الاتصال بقاعدة البيانات من أي مكان
   Future<void> close() async {
     if (_db != null) {
       await _db!.close();
       _db = null;
     }
+  }
+
+  // ✅ دالة ترجع اسم ملف قاعدة البيانات الحالي (للاستخدام في النسخ الاحتياطي)
+  String getDbFileName() {
+    if (_dbFilePath != null) {
+      return basename(_dbFilePath!);
+    }
+    return 'payrolls.db'; // الافتراضي
   }
 
   Future<Database> _initDb() async {
@@ -517,8 +527,9 @@ class AppDatabase {
   }
 
   Future<void> _onCreate(Database db, int version) async {
+    // 1. جدول المستخدمين
     await db.execute('''
-      CREATE TABLE  IF NOT EXISTS users (
+      CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
         passwordHash TEXT NOT NULL,
@@ -534,8 +545,9 @@ class AppDatabase {
 
     await _createAuditLog(db);
 
+    // 2. جدول الأدوار
     await db.execute('''
-      CREATE TABLE  IF NOT EXISTS roles (
+      CREATE TABLE IF NOT EXISTS roles (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         permissions TEXT NOT NULL,
@@ -543,16 +555,18 @@ class AppDatabase {
       )
     ''');
 
+    // 3. جدول الأجهزة المفعّلة
     await db.execute('''
-      CREATE TABLE  IF NOT EXISTS activated_devices (
+      CREATE TABLE IF NOT EXISTS activated_devices (
         deviceFingerprint TEXT PRIMARY KEY,
         slotNumber INTEGER NOT NULL,
         activatedAt TEXT NOT NULL
       )
     ''');
 
+    // 4. جدول الترخيص
     await db.execute('''
-      CREATE TABLE  IF NOT EXISTS license (
+      CREATE TABLE IF NOT EXISTS license (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         licenseJson TEXT NOT NULL,
         activatedAt TEXT NOT NULL,
@@ -563,16 +577,17 @@ class AppDatabase {
       )
     ''');
 
+    // 5. جدول الإعدادات العامة
     await db.execute('''
-      CREATE TABLE  IF NOT EXISTS app_meta (
+      CREATE TABLE IF NOT EXISTS app_meta (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
       )
     ''');
 
-    // ✅ تمت إضافة isInsured في الـ CREATE TABLE
+    // 6. جدول الموظفين (مع isInsured)
     await db.execute('''
-      CREATE TABLE  IF NOT EXISTS employees (
+      CREATE TABLE IF NOT EXISTS employees (
         id TEXT PRIMARY KEY,
         nameAr TEXT NOT NULL,
         nameEn TEXT NOT NULL,
@@ -580,7 +595,7 @@ class AppDatabase {
         jobTitle TEXT,
         nationalId TEXT,
         hireDate TEXT,
-        resignationDate TEXT,   
+        resignationDate TEXT,
         contractType TEXT,
         employeeType TEXT,
         insuranceCode TEXT,
@@ -596,6 +611,7 @@ class AppDatabase {
         salaryType TEXT NOT NULL DEFAULT 'net',
         paymentMethod TEXT NOT NULL DEFAULT 'cash',
         isActive INTEGER NOT NULL DEFAULT 1,
+        attendanceEnabled INTEGER NOT NULL DEFAULT 1,
         bankName TEXT DEFAULT '',
         bankAccount TEXT DEFAULT '',
         bankSwift TEXT DEFAULT '',
@@ -603,8 +619,9 @@ class AppDatabase {
       )
     ''');
 
+    // 7. جدول الحضور القديم (للتوافق)
     await db.execute('''
-      CREATE TABLE  IF NOT EXISTS attendance (
+      CREATE TABLE IF NOT EXISTS attendance (
         id TEXT PRIMARY KEY,
         employeeId TEXT,
         employeeName TEXT,
@@ -615,8 +632,88 @@ class AppDatabase {
       )
     ''');
 
+    // 8. جدول الحضور الجديد (attendance_records)
     await db.execute('''
-      CREATE TABLE  IF NOT EXISTS payroll_records (
+      CREATE TABLE IF NOT EXISTS attendance_records (
+        id TEXT PRIMARY KEY,
+        employeeId TEXT NOT NULL,
+        date TEXT NOT NULL,
+        checkInTime TEXT,
+        checkOutTime TEXT,
+        lateMinutes INTEGER DEFAULT 0,
+        overtimeMinutes INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'present',
+        notes TEXT,
+        UNIQUE(employeeId, date)
+      )
+    ''');
+
+    // 9. جدول طلبات الإجازات
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS leave_requests (
+        id TEXT PRIMARY KEY,
+        employeeId TEXT NOT NULL,
+        leaveType TEXT NOT NULL,
+        startDate TEXT NOT NULL,
+        endDate TEXT NOT NULL,
+        daysCount INTEGER NOT NULL,
+        status TEXT DEFAULT 'pending',
+        reason TEXT,
+        approvedBy TEXT,
+        approvedAt TEXT,
+        createdAt TEXT NOT NULL
+      )
+    ''');
+
+    // 10. جدول أرصدة الإجازات
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS leave_balances (
+        id TEXT PRIMARY KEY,
+        employeeId TEXT NOT NULL,
+        year INTEGER NOT NULL,
+        leaveType TEXT NOT NULL,
+        totalDays INTEGER NOT NULL,
+        usedDays INTEGER DEFAULT 0,
+        UNIQUE(employeeId, year, leaveType)
+      )
+    ''');
+
+    // 11. جدول الجزاءات
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS penalties (
+        id TEXT PRIMARY KEY,
+        employeeId TEXT NOT NULL,
+        date TEXT NOT NULL,
+        type TEXT NOT NULL,
+        amount REAL NOT NULL,
+        reason TEXT,
+        appliedToPayrollMonth INTEGER,
+        appliedToPayrollYear INTEGER,
+        createdAt TEXT NOT NULL
+      )
+    ''');
+
+    // 12. جدول تسويات نهاية الخدمة
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS eos_settlements (
+        id TEXT PRIMARY KEY,
+        employeeId TEXT NOT NULL,
+        endDate TEXT NOT NULL,
+        yearsOfService REAL NOT NULL,
+        lastBasicSalary REAL NOT NULL,
+        settlementAmount REAL NOT NULL,
+        leaveBalanceAmount REAL DEFAULT 0,
+        totalAmount REAL NOT NULL,
+        paymentStatus TEXT DEFAULT 'pending',
+        paidDate TEXT,
+        notes TEXT,
+        createdAt TEXT NOT NULL
+      )
+    ''');
+
+    // 13. جدول سجلات الرواتب
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS payroll_records (
         id TEXT PRIMARY KEY,
         employeeId TEXT NOT NULL,
         employeeNameAr TEXT NOT NULL,
@@ -630,14 +727,17 @@ class AppDatabase {
         taxAmount REAL NOT NULL DEFAULT 0,
         insuranceAmount REAL NOT NULL DEFAULT 0,
         netSalary REAL NOT NULL,
+        attendanceDeduction REAL DEFAULT 0,
+        overtimeEarnings REAL DEFAULT 0,
         generatedAt TEXT NOT NULL,
         notes TEXT DEFAULT '',
         UNIQUE(employeeId, month, year)
       )
     ''');
 
+    // 14. جدول المدفوعات
     await db.execute('''
-      CREATE TABLE  IF NOT EXISTS salary_payments (
+      CREATE TABLE IF NOT EXISTS salary_payments (
         id TEXT PRIMARY KEY,
         payrollRecordId TEXT NOT NULL,
         amount REAL NOT NULL,
@@ -648,6 +748,31 @@ class AppDatabase {
         FOREIGN KEY (payrollRecordId) REFERENCES payroll_records(id) ON DELETE CASCADE
       )
     ''');
+
+    // ✅ جدول الأقسام الجديد
+    await db.execute('''
+  CREATE TABLE IF NOT EXISTS departments (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE
+  )
+''');
+
+// ✅ إدخال الأقسام الافتراضية
+    final defaultDepartments = [
+      'hr',
+      'it',
+      'finance',
+      'sales',
+      'marketing',
+      'operations',
+      'logistics',
+      'quality',
+      'maintenance',
+      'purchasing'
+    ];
+    for (final dept in defaultDepartments) {
+      await db.insert('departments', {'id': dept, 'name': dept});
+    }
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -655,7 +780,7 @@ class AppDatabase {
       await db.execute('ALTER TABLE license ADD COLUMN lastCheckDate TEXT');
       await db.execute('ALTER TABLE license ADD COLUMN remainingDays INTEGER');
       await db.execute('''
-        CREATE TABLE  IF NOT EXISTS app_meta (
+        CREATE TABLE IF NOT EXISTS app_meta (
           key TEXT PRIMARY KEY,
           value TEXT NOT NULL
         )
@@ -668,7 +793,7 @@ class AppDatabase {
       }
       try {
         await db.execute('''
-          CREATE TABLE  IF NOT EXISTS attendance (
+          CREATE TABLE IF NOT EXISTS attendance (
             id TEXT PRIMARY KEY,
             employeeId TEXT,
             employeeNameAr TEXT,
@@ -684,7 +809,7 @@ class AppDatabase {
 
     if (oldVersion < 3) {
       await db.execute('''
-        CREATE TABLE  IF NOT EXISTS payroll_records (
+        CREATE TABLE IF NOT EXISTS payroll_records (
           id TEXT PRIMARY KEY,
           employeeId TEXT NOT NULL,
           employeeNameAr TEXT NOT NULL,
@@ -704,7 +829,7 @@ class AppDatabase {
       ''');
 
       await db.execute('''
-        CREATE TABLE  IF NOT EXISTS salary_payments (
+        CREATE TABLE IF NOT EXISTS salary_payments (
           id TEXT PRIMARY KEY,
           payrollRecordId TEXT NOT NULL,
           amount REAL NOT NULL,
@@ -767,7 +892,7 @@ class AppDatabase {
       await _createAuditLog(db);
     }
 
-    // ✅ الخطوة السحرية: إضافة العمود الجديد للداتابيزات القديمة
+    // ✅ الإصدار 11: التأمينات الثابتة
     if (oldVersion < 11) {
       try {
         await db.execute(
@@ -775,12 +900,138 @@ class AppDatabase {
       } catch (_) {}
     }
 
-    // ✅ إضافة isInsured في الإصدار 12
+    // ✅ الإصدار 12: حقل مؤمن عليه
     if (oldVersion < 12) {
       try {
         await db.execute(
             'ALTER TABLE employees ADD COLUMN isInsured INTEGER NOT NULL DEFAULT 1');
       } catch (_) {}
+    }
+
+    // ✅ الإصدار 13: جداول الحضور والإجازات والجزاءات ونهاية الخدمة
+    if (oldVersion < 13) {
+      // جدول الحضور الجديد
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS attendance_records (
+          id TEXT PRIMARY KEY,
+          employeeId TEXT NOT NULL,
+          date TEXT NOT NULL,
+          checkInTime TEXT,
+          checkOutTime TEXT,
+          lateMinutes INTEGER DEFAULT 0,
+          overtimeMinutes INTEGER DEFAULT 0,
+          status TEXT DEFAULT 'present',
+          notes TEXT,
+          UNIQUE(employeeId, date)
+        )
+      ''');
+
+      // جدول طلبات الإجازات
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS leave_requests (
+          id TEXT PRIMARY KEY,
+          employeeId TEXT NOT NULL,
+          leaveType TEXT NOT NULL,
+          startDate TEXT NOT NULL,
+          endDate TEXT NOT NULL,
+          daysCount INTEGER NOT NULL,
+          status TEXT DEFAULT 'pending',
+          reason TEXT,
+          approvedBy TEXT,
+          approvedAt TEXT,
+          createdAt TEXT NOT NULL
+        )
+      ''');
+
+      // جدول أرصدة الإجازات
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS leave_balances (
+          id TEXT PRIMARY KEY,
+          employeeId TEXT NOT NULL,
+          year INTEGER NOT NULL,
+          leaveType TEXT NOT NULL,
+          totalDays INTEGER NOT NULL,
+          usedDays INTEGER DEFAULT 0,
+          UNIQUE(employeeId, year, leaveType)
+        )
+      ''');
+
+      // جدول الجزاءات
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS penalties (
+          id TEXT PRIMARY KEY,
+          employeeId TEXT NOT NULL,
+          date TEXT NOT NULL,
+          type TEXT NOT NULL,
+          amount REAL NOT NULL,
+          reason TEXT,
+          appliedToPayrollMonth INTEGER,
+          appliedToPayrollYear INTEGER,
+          createdAt TEXT NOT NULL
+        )
+      ''');
+
+      // جدول تسويات نهاية الخدمة
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS eos_settlements (
+          id TEXT PRIMARY KEY,
+          employeeId TEXT NOT NULL,
+          endDate TEXT NOT NULL,
+          yearsOfService REAL NOT NULL,
+          lastBasicSalary REAL NOT NULL,
+          settlementAmount REAL NOT NULL,
+          leaveBalanceAmount REAL DEFAULT 0,
+          totalAmount REAL NOT NULL,
+          paymentStatus TEXT DEFAULT 'pending',
+          paidDate TEXT,
+          notes TEXT,
+          createdAt TEXT NOT NULL
+        )
+      ''');
+
+      // إضافة حقول الحضور لجدول الرواتب
+      try {
+        await db.execute(
+            'ALTER TABLE payroll_records ADD COLUMN attendanceDeduction REAL DEFAULT 0');
+      } catch (_) {}
+      try {
+        await db.execute(
+            'ALTER TABLE payroll_records ADD COLUMN overtimeEarnings REAL DEFAULT 0');
+      } catch (_) {}
+    }
+    // ✅ الإصدار 14: حقل بيتبع الحضور
+    if (oldVersion < 14) {
+      try {
+        await db.execute(
+          'ALTER TABLE employees ADD COLUMN attendanceEnabled INTEGER NOT NULL DEFAULT 1',
+        );
+      } catch (_) {}
+    }
+    // ✅ الإصدار 15: جدول الأقسام
+    if (oldVersion < 15) {
+      await db.execute('''
+    CREATE TABLE IF NOT EXISTS departments (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE
+    )
+  ''');
+      final defaultDepartments = [
+        'hr',
+        'it',
+        'finance',
+        'sales',
+        'marketing',
+        'operations',
+        'logistics',
+        'quality',
+        'maintenance',
+        'purchasing'
+      ];
+      for (final dept in defaultDepartments) {
+        try {
+          await db.insert('departments', {'id': dept, 'name': dept});
+        } catch (_) {}
+      }
     }
   }
 

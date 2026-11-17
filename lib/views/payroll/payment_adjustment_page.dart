@@ -1,6 +1,6 @@
 // lib/views/payroll/payment_adjustment_page.dart
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 import '../../controllers/employee_controller.dart';
@@ -45,7 +45,8 @@ class _PaymentAdjustmentPageState extends State<PaymentAdjustmentPage> {
               items: employees.map((e) {
                 return DropdownMenuItem(
                   value: e,
-                  child: Text(e.getDisplayName(context)), // ✅ عرض الاسم حسب اللغة
+                  child:
+                      Text(e.getDisplayName(context)), // ✅ عرض الاسم حسب اللغة
                 );
               }).toList(),
               onChanged: (value) {
@@ -53,7 +54,6 @@ class _PaymentAdjustmentPageState extends State<PaymentAdjustmentPage> {
               },
             ),
             const SizedBox(height: 16),
-
             SegmentedButton<String>(
               segments: const [
                 ButtonSegment(value: 'advance', label: Text('Advance')),
@@ -66,18 +66,17 @@ class _PaymentAdjustmentPageState extends State<PaymentAdjustmentPage> {
               },
             ),
             const SizedBox(height: 16),
-
             TextField(
-              controller: _adjustmentType == 'advance' 
-                  ? _advancePaymentController 
-                  : _adjustmentType == 'bonus' 
-                      ? _bonusController 
+              controller: _adjustmentType == 'advance'
+                  ? _advancePaymentController
+                  : _adjustmentType == 'bonus'
+                      ? _bonusController
                       : _deductionController,
               decoration: InputDecoration(
-                labelText: _adjustmentType == 'advance' 
-                    ? 'advance_amount'.tr() 
-                    : _adjustmentType == 'bonus' 
-                        ? 'bonus_amount'.tr() 
+                labelText: _adjustmentType == 'advance'
+                    ? 'advance_amount'.tr()
+                    : _adjustmentType == 'bonus'
+                        ? 'bonus_amount'.tr()
                         : 'deduction_amount'.tr(),
                 border: const OutlineInputBorder(),
                 prefixText: 'EGP ',
@@ -85,7 +84,6 @@ class _PaymentAdjustmentPageState extends State<PaymentAdjustmentPage> {
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
-
             TextField(
               decoration: InputDecoration(
                 labelText: 'notes'.tr(),
@@ -94,7 +92,6 @@ class _PaymentAdjustmentPageState extends State<PaymentAdjustmentPage> {
               maxLines: 3,
             ),
             const SizedBox(height: 24),
-
             ElevatedButton(
               onPressed: _selectedEmployee == null ? null : _saveAdjustment,
               style: ElevatedButton.styleFrom(

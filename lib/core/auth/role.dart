@@ -1,5 +1,3 @@
-
-
 // lib/core/auth/role.dart
 import 'permission.dart';
 
@@ -19,7 +17,6 @@ class Role {
   bool can(Permission p) => permissions.contains(p);
 
   factory Role.fromJson(Map<String, dynamic> json) {
-    // ✅ تحويل isSystemRole من int إلى bool بشكل صحيح
     final isSystem = json['isSystemRole'];
     final bool isSystemRoleBool;
     if (isSystem is int) {
@@ -33,8 +30,6 @@ class Role {
     return Role(
       id: json['id'] as String,
       name: json['name'] as String,
-      // صلاحية غير معروفة (مثلاً من نسخة أحدث) بتتجاهل بدل ما تتحوّل
-      // لصلاحية فعلية - كان ده بيمنح viewEmployees بالغلط.
       permissions: (json['permissions'] as List<dynamic>)
           .map((e) => Permission.values.where((p) => p.name == e))
           .expand((m) => m)
@@ -54,25 +49,38 @@ class Role {
 
   static List<Role> defaultRoles() {
     return [
+      // 1. المدير - كل الصلاحيات
       Role(
         id: 'admin',
         name: 'role_admin',
-        permissions: Permission.values,
+        permissions: Permission.values, // كل حاجة
         isSystemRole: true,
       ),
+
+      // 2. HR - موارد بشرية (إجازات، جزاءات، حضور، إعدادات حضور)
       Role(
         id: 'hr',
         name: 'role_hr',
         permissions: [
           Permission.viewEmployees,
+          Permission.addEmployee,
+          Permission.editEmployee,
           Permission.viewPayroll,
           Permission.runPayroll,
           Permission.editSalary,
           Permission.viewReports,
           Permission.exportReports,
+          Permission.manageAttendance, // ✅
+          Permission.manageAttendanceSettings, // ✅ جديد
+          Permission.manageLeaves, // ✅
+          Permission.managePenalties, // ✅
+          Permission.viewDashboard, // ✅
+          Permission.viewEOSCalculator, // ✅
         ],
         isSystemRole: true,
       ),
+
+      // 3. المحاسب - مالية فقط (مش حضور ولا إجازات)
       Role(
         id: 'accountant',
         name: 'role_accountant',
@@ -82,9 +90,13 @@ class Role {
           Permission.runPayroll,
           Permission.viewReports,
           Permission.exportReports,
+          Permission.viewDashboard,
+          Permission.viewCompliance, // ✅ بس ده
         ],
         isSystemRole: true,
       ),
+
+      // 4. مشاهد - قراءة فقط
       Role(
         id: 'viewer',
         name: 'role_viewer',
@@ -92,6 +104,7 @@ class Role {
           Permission.viewEmployees,
           Permission.viewPayroll,
           Permission.viewReports,
+          Permission.viewDashboard, // لوحة التحكم فقط
         ],
         isSystemRole: true,
       ),

@@ -1,5 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// راتب موظف واحد في شهر واحد - بيتولّد مرة واحدة لكل موظف/شهر (فريد).
 class PayrollRecord {
@@ -18,6 +18,8 @@ class PayrollRecord {
   final double netSalary;
   final DateTime generatedAt;
   final String notes;
+  final double attendanceDeduction;
+  final double overtimeEarnings;
 
   const PayrollRecord({
     required this.id,
@@ -35,6 +37,8 @@ class PayrollRecord {
     required this.netSalary,
     required this.generatedAt,
     this.notes = '',
+    this.attendanceDeduction = 0,
+    this.overtimeEarnings = 0,
   });
 
   /// إجمالي المستحق = الأساسي + المتغيّر + البدلات (قبل أي خصم)
@@ -68,6 +72,8 @@ class PayrollRecord {
         'netSalary': netSalary,
         'generatedAt': generatedAt.toIso8601String(),
         'notes': notes,
+        'attendanceDeduction': attendanceDeduction,
+        'overtimeEarnings': overtimeEarnings,
       };
 
   factory PayrollRecord.fromMap(Map<String, dynamic> map) => PayrollRecord(
@@ -86,5 +92,8 @@ class PayrollRecord {
         netSalary: (map['netSalary'] as num).toDouble(),
         generatedAt: DateTime.parse(map['generatedAt'] as String),
         notes: map['notes'] as String? ?? '',
+        attendanceDeduction:
+            (map['attendanceDeduction'] as num?)?.toDouble() ?? 0.0,
+        overtimeEarnings: (map['overtimeEarnings'] as num?)?.toDouble() ?? 0.0,
       );
 }

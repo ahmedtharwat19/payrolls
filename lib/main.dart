@@ -1,11 +1,15 @@
-
-
-
-
 // lib/main.dart
 import 'dart:ui';
 
-import 'package:flutter/material.dart';
+// ✅ الحزمة الجديدة: توفر GlobalMaterialLocalizations (النسخة الجديدة)
+import 'package:material_ui/material_ui.dart';
+
+// ✅ الحزمة القديمة: نستخدم منها GlobalWidgetsLocalizations فقط
+//    ونستبعد GlobalMaterialLocalizations (موجودة في material_ui)
+//    و GlobalCupertinoLocalizations (Deprecated)
+import 'package:flutter_localizations/flutter_localizations.dart'
+    hide GlobalMaterialLocalizations, GlobalCupertinoLocalizations;
+
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -40,10 +44,7 @@ void main() async {
 
   await EasyLocalization.ensureInitialized();
 
-  // تهيئة Sqflite حسب المنصة
   if (kIsWeb) {
-    // ⚠️ نسخة الويب: قاعدة البيانات مش مشفّرة والترخيص أضعف، فالتشغيل
-    // متوقف افتراضيًا. للتجربة فقط: --dart-define=ALLOW_WEB=true
     const allowWeb = bool.fromEnvironment('ALLOW_WEB');
     if (!allowWeb) {
       runApp(const MaterialApp(
@@ -111,7 +112,6 @@ class MyApp extends StatelessWidget {
     required this.themeController,
   });
 
-  // ✅ ثيم فاتح (زي ما كان بالظبط)
   ThemeData _lightTheme() => ThemeData(
         primarySwatch: Colors.green,
         useMaterial3: true,
@@ -119,7 +119,6 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.light,
       );
 
-  // ✅ ثيم غامق حقيقي - نفس هوية الأخضر بس بألوان مناسبة للوضع الليلي
   ThemeData _darkTheme() => ThemeData(
         useMaterial3: true,
         fontFamily: 'Cairo-Regular',
@@ -155,7 +154,13 @@ class MyApp extends StatelessWidget {
             themeMode: theme.mode,
             theme: _lightTheme(),
             darkTheme: _darkTheme(),
-            localizationsDelegates: context.localizationDelegates,
+            // ✅ الحل: نستخدم GlobalMaterialLocalizations من material_ui
+            //    و GlobalWidgetsLocalizations من flutter_localizations
+            localizationsDelegates: [
+              GlobalMaterialLocalizations.delegate, // من material_ui
+              GlobalWidgetsLocalizations.delegate, // من flutter_localizations
+              ...context.localizationDelegates, // EasyLocalization
+            ],
             supportedLocales: context.supportedLocales,
             locale: context.locale,
             localeResolutionCallback: (locale, supportedLocales) {

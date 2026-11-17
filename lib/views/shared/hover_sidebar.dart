@@ -5,7 +5,7 @@
 // من فكرة "CSS hover sidebar" الشائعة، لكن ده تصميم أصلي بـ Flutter
 // مربوط ببيانات التطبيق الفعلية (مش نسخ من أي مصدر خارجي).
 // lib/views/shared/hover_sidebar.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class HoverSidebarItem {
   final IconData icon;

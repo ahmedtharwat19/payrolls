@@ -1,14 +1,17 @@
 // lib/views/employee/employee_form.dart
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:puresip_payrolls/core/auth/auth_service.dart';
+import 'package:puresip_payrolls/core/auth/permission.dart';
 import '../../models/employee_model.dart';
 import '../../controllers/employee_controller.dart';
 import '../../core/responsive/breakpoints.dart';
 import '../shared/section_header.dart';
 import '../shared/adaptive_form_layout.dart';
 import 'package:uuid/uuid.dart';
+import '../../services/department_service.dart'; // ✅ جديد
 
 class EmployeeForm extends StatefulWidget {
   final Employee? employee;
@@ -28,7 +31,7 @@ class _EmployeeFormState extends State<EmployeeForm> {
   final _bankIbanController = TextEditingController();
   final _fixedInsuranceController = TextEditingController();
 
-  final List<String> _departments = [
+/*   final List<String> _departments = [
     'hr',
     'it',
     'finance',
@@ -40,6 +43,11 @@ class _EmployeeFormState extends State<EmployeeForm> {
     'maintenance',
     'purchasing',
   ];
+ */
+
+// استبدل _departments الثابت بـ:
+  List<String> _departments = [];
+  final _deptService = DepartmentService();
 
   final List<String> _contractTypes = ['permanent', 'temporary', 'contract'];
   final List<String> _employeeTypes = ['full-time', 'part-time', 'intern'];
@@ -47,10 +55,12 @@ class _EmployeeFormState extends State<EmployeeForm> {
   @override
   void initState() {
     super.initState();
+    _loadDepartments(); // ✅ جديد
+
     if (widget.employee != null) {
       _loadEmployeeData(widget.employee!);
     } else {
-      _data['department'] = _departments.first;
+      // _data['department'] = _departments.first;
       _data['contractType'] = _contractTypes.first;
       _data['employeeType'] = _employeeTypes.first;
       _data['salaryType'] = 'net';
@@ -60,17 +70,33 @@ class _EmployeeFormState extends State<EmployeeForm> {
       _data['deductions'] = 0.0;
       _data['isActive'] = true;
       _data['isInsured'] = true; // ✅ القيمة الافتراضية
+      _data['attendanceEnabled'] = true;
+      _data['department'] = '';
 
       _fixedInsuranceController.text = '0';
+    }
+  }
+
+  Future<void> _loadDepartments() async {
+    final depts = await _deptService.getAll();
+    if (mounted) {
+      setState(() {
+        _departments = depts;
+        // لو الموظف جديد ومفيش قسم مختار، اختار الأول
+        if (_data['department'] == null || _data['department'] == '') {
+          _data['department'] = depts.isNotEmpty ? depts.first : '';
+        }
+      });
     }
   }
 
   void _loadEmployeeData(Employee emp) {
     _data['nameAr'] = emp.nameAr;
     _data['nameEn'] = emp.nameEn;
-    _data['department'] = _departments.contains(emp.department)
-        ? emp.department
-        : _departments.first;
+    // _data['department'] = _departments.contains(emp.department)
+    //     ? emp.department
+    //     : _departments.first;
+    _data['department'] = emp.department;
     _data['jobTitle'] = emp.jobTitle;
     _data['nationalId'] = emp.nationalId;
     _data['hireDate'] = emp.hireDate;
@@ -93,7 +119,7 @@ class _EmployeeFormState extends State<EmployeeForm> {
     _data['bankIban'] = emp.bankIban;
     _data['isActive'] = emp.isActive;
     _data['isInsured'] = emp.isInsured; // ✅ تحميل القيمة
-
+    _data['attendanceEnabled'] = emp.attendanceEnabled;
     _bankNameController.text = emp.bankName;
     _bankAccountController.text = emp.bankAccount;
     _bankSwiftController.text = emp.bankSwift;
@@ -165,7 +191,7 @@ class _EmployeeFormState extends State<EmployeeForm> {
                   ),
                   AdaptiveFormField(
                     child: DropdownButtonFormField<String>(
-                      initialValue: _data['department'] ?? _departments.first,
+                      initialValue: _data['department'],
                       decoration: InputDecoration(
                         labelText: 'department'.tr(),
                         border: const OutlineInputBorder(),
@@ -518,6 +544,24 @@ class _EmployeeFormState extends State<EmployeeForm> {
                       onSaved: (v) => _data['insuranceCode'] = v ?? '',
                     ),
                   ),
+                  if (context
+                      .read<AuthService>()
+                      .can(Permission.manageAttendanceSettings))
+                    AdaptiveFormField(
+                      child: SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(_isArabic
+                            ? 'بيتبع الحضور والانصراف'
+                            : 'Follows Attendance'),
+                        subtitle: Text(_isArabic
+                            ? 'لو مقفول، الموظف مش هيظهر في شاشة الحضور'
+                            : 'If off, employee won\'t appear in attendance'),
+                        value: _data['attendanceEnabled'] ?? true,
+                        onChanged: (val) {
+                          setState(() => _data['attendanceEnabled'] = val);
+                        },
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -596,7 +640,7 @@ class _EmployeeFormState extends State<EmployeeForm> {
       bankSwift: _data['bankSwift'] ?? '',
       bankIban: _data['bankIban'] ?? '',
       isActive: _data['isActive'] ?? true,
-
+      attendanceEnabled: _data['attendanceEnabled'] ?? true,
       variableSalary: widget.employee?.variableSalary ?? 0.0,
       expenses: widget.employee?.expenses ?? 0.0,
     );

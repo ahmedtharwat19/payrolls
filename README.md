@@ -1,246 +1,229 @@
 <div align="center">
 
-# PureSip Payrolls
+# 💼 PureSip Payrolls
 
-**نظام متكامل لإدارة المرتبات والموظفين — يعمل بدون إنترنت، مبني بـ Flutter**
+**An offline-first payroll & HR management system built with Flutter — encrypted, licensed offline, Arabic & English.**
 
 [![CI](https://github.com/ahmedtharwat19/payrolls/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmedtharwat19/payrolls/actions/workflows/ci.yml)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47%2B-02569B?logo=flutter&logoColor=white)
 ![Dart](https://img.shields.io/badge/Dart-3.13%2B-0175C2?logo=dart&logoColor=white)
 ![Platforms](https://img.shields.io/badge/Windows%20%C2%B7%20Android%20%C2%B7%20macOS%20%C2%B7%20Linux-555555)
 ![Database](https://img.shields.io/badge/DB-SQLite%20%2B%20SQLCipher-003B57?logo=sqlite&logoColor=white)
-![License](https://img.shields.io/badge/Licensing-Ed25519%20offline-8A2BE2)
-![Locale](https://img.shields.io/badge/Languages-العربية%20%7C%20English-success)
+![Licensing](https://img.shields.io/badge/Licensing-Ed25519%20offline-8A2BE2)
+![Languages](https://img.shields.io/badge/Languages-Arabic%20%7C%20English-success)
+
+**English** · **[العربية](README.ar.md)**
+
+[Overview](#-overview) • [What's New](#-whats-new) • [Features](#-features) • [Payroll Math](#-tax--insurance-calculation) • [Security](#-security--authentication) • [Licensing](#-offline-licensing) • [Getting Started](#-getting-started) • [Roadmap](#-roadmap)
 
 </div>
 
-<div dir="rtl">
-
 > [!NOTE]
-> المنصة الأساسية المستهدفة هي **Windows**، مع دعم إضافي لـ **Android**.
-> نسخة **الويب متوقفة افتراضيًا** لأن قاعدة البيانات فيها غير مشفّرة والترخيص أضعف.
-> للتجربة فقط: `flutter run -d chrome --dart-define=ALLOW_WEB=true`
-
-## المحتويات
-
-- [نظرة عامة](#نظرة-عامة)
-- [الجديد في هذا الإصدار](#الجديد-في-هذا-الإصدار)
-- [المزايا الرئيسية](#المزايا-الرئيسية)
-- [حساب الضريبة والتأمينات](#حساب-الضريبة-والتأمينات)
-- [الأمان والمصادقة](#الأمان-والمصادقة)
-- [الترخيص الأوفلاين](#الترخيص-الأوفلاين)
-- [قاعدة البيانات والنسخ الاحتياطي](#قاعدة-البيانات-والنسخ-الاحتياطي)
-- [هيكل المشروع](#هيكل-المشروع)
-- [التقنيات المستخدمة](#التقنيات-المستخدمة)
-- [البدء السريع](#البدء-السريع)
-- [الاستيراد الجماعي من Excel](#الاستيراد-الجماعي-من-excel)
-- [الاختبارات والتكامل المستمر](#الاختبارات-والتكامل-المستمر)
-- [الإصدار والتوقيع](#الإصدار-والتوقيع)
-- [الوثائق ذات الصلة](#الوثائق-ذات-الصلة)
-- [خارطة الطريق](#خارطة-الطريق)
-- [حقوق الملكية](#حقوق-الملكية)
+> **Windows** is the primary target platform, with additional **Android** support.
+> The **web build is disabled by default**: its database is unencrypted and licensing is weaker.
+> For experimentation only: `flutter run -d chrome --dart-define=ALLOW_WEB=true`
 
 ---
 
-## نظرة عامة
+## 📌 Overview
 
-تطبيق موجّه للشركات الصغيرة والمتوسطة التي تريد إدارة مرتبات موظفيها **باستقلال تام عن الإنترنت** (Offline-first):
+PureSip Payrolls is built for small and medium-sized businesses that want to run payroll **completely independent of the internet**.
 
-| المحور | ما يقدّمه التطبيق |
+| Area | What you get |
 |---|---|
-| **البيانات** | قاعدة بيانات محلية على جهاز العميل، مشفّرة بـ SQLCipher على سطح المكتب |
-| **الترخيص** | تفعيل بملف `.lic` موقّع بـ Ed25519 ومربوط ببصمة الجهاز، بدون اتصال |
-| **الحسابات** | ضريبة وتأمينات بشرائح قابلة للتعديل، مع دعم موظفي «الصافي» و«الإجمالي» |
-| **المخرجات** | تقارير PDF بالعربية، وتصدير/استيراد Excel |
-| **الصلاحيات** | مستخدمون وأدوار وسجل عمليات (Audit Log) |
+| **Data** | Local database on the client machine, encrypted with SQLCipher on desktop |
+| **Licensing** | Activation via a `.lic` file signed with Ed25519 and bound to the device fingerprint — no connection needed |
+| **Calculations** | Editable tax and insurance brackets; supports both **Net** and **Gross** employees |
+| **Output** | Arabic-ready PDF reports, Excel import/export |
+| **Access control** | Users, roles and an audit log |
 
 ---
 
-## الجديد في هذا الإصدار
+## 🆕 What's New
 
-- **قاعدة بيانات محمولة (Portable):** تُحفظ بجوار ملف التشغيل (`.exe`) بدل مجلدات النظام المخفية.
-- **اسم قاعدة ديناميكي:** يُقرأ اسم الشركة من `config.json` ويُسمّى به ملف القاعدة (مثل `omicron.db`)، مع **إعادة تشغيل تلقائية** عند تغيير الاسم لضمان استقرار الاتصال.
-- **حقل «مؤمَّن عليه»:** تحديد خضوع الموظف للتأمينات الاجتماعية من عدمه؛ وإن لم يكن مؤمَّنًا تُصفَّر التأمينات تلقائيًا في كل الحسابات.
-- **الدفع الجزئي والجماعي:** صرف دفعات مقدّمة (سلف) بنسبة 50% أو 30% أو نسبة مخصصة، لموظف واحد أو **لقسم كامل** دفعة واحدة.
-- **تقارير PDF احترافية:** دعم كامل للعربية (Arabic Shaping)، وكشف مخصص للبنوك (IBAN & SWIFT)، وبيانات الشركة بلغتين في رأس التقرير.
-
----
-
-## المزايا الرئيسية
-
-### الموظفون
-- بيانات كاملة: شخصية ووظيفية وبنكية.
-- استيراد جماعي من Excel وتصدير نفس البيانات، وقالب فارغ جاهز.
-
-### المرتبات
-- جدول شهري لكل الموظفين: الأساسي، الإضافي، البدلات، الخصومات، الضريبة، التأمينات، الصافي (`payroll_page.dart`).
-- **دبل كليك** على أي خلية في صف الموظف يفتح شاشة تفصيلية لتعديل الإضافي والبدلات والخصومات بسرعة (`employee_salary_detail_page.dart`).
-- زر **«توليد»** في شريط العنوان لتوليد سجلات رواتب شهر معيّن لكل الموظفين دفعة واحدة.
-- شريط تمرير أفقي واضح تحت الجدول، وتصدير PDF.
-- **الرواتب السابقة** (`historical_payroll_page.dart`) وتسوية الدفعات الجزئية (`payment_adjustment_page.dart`, `record_payment_dialog.dart`).
-
-### الحضور والتقارير
-- الحضور والانصراف والإضافي والتأخير (`attendance_controller.dart`).
-- تقارير إجمالي الصرف **كاش مقابل بنك** شهريًا (`reports_page.dart`).
-
-### الإعدادات
-- شرائح الضريبة، نسب التأمينات، بيانات البنك، قواعد العمل (`rules_page.dart`)، وبيانات الشركة (الاسم والعنوان للطباعة).
-
-### الصلاحيات والمستخدمون
-- أدوار وصلاحيات تُطبَّق فعليًا في الشاشات، وشاشة إدارة المستخدمين وعرض سجل العمليات.
-
-### أدوات البيانات
-- تصدير/استرجاع نسخة احتياطية كاملة، استيراد Excel، وتصحيح تكرار الأساسي/البدلات. الشاشة كلها تتطلب صلاحية `manageData`.
+- **Portable database** — stored next to the executable instead of hidden system folders.
+- **Dynamic database name** — the company name is read from `config.json` and names the DB file (e.g. `omicron.db`); the app **restarts automatically** when the name changes to keep the connection stable.
+- **"Insured" flag** — marks whether an employee is subject to social insurance; if not, insurance is zeroed in every calculation.
+- **Partial & bulk payments** — advances of 50%, 30% or a custom percentage, for one employee or a **whole department** at once.
+- **Professional PDF reports** — full Arabic shaping, a dedicated bank sheet (IBAN & SWIFT), and bilingual company details in the header.
 
 ---
 
-## حساب الضريبة والتأمينات
+## ✨ Features
 
-لكل موظف `salaryType` من نوعين، والمنطق في `payroll_calculation_service.dart` مع `tax_service.dart` و`insurance_service.dart`:
+### 👥 Employees
+- Complete personal, job and banking records.
+- Bulk Excel import and export, plus a ready-made blank template.
 
-| النوع | المعنى | الأثر |
+### 💰 Payroll
+- Monthly table for all employees: basic, overtime, allowances, deductions, tax, insurance, net (`payroll_page.dart`).
+- **Double-click** any cell in an employee row to open a detail screen for quick edits (`employee_salary_detail_page.dart`).
+- **"Generate"** button in the app bar creates a month's payroll records for all employees in one go.
+- Horizontal scrollbar under the table, and PDF export.
+- **Historical payroll** (`historical_payroll_page.dart`) and partial-payment adjustment (`payment_adjustment_page.dart`, `record_payment_dialog.dart`).
+
+### 🕒 Attendance & Reports
+- Attendance, overtime and lateness tracking (`attendance_controller.dart`).
+- Monthly **cash vs. bank** disbursement reports (`reports_page.dart`).
+
+### ⚙️ Settings
+- Tax brackets, insurance rates, bank details, business rules (`rules_page.dart`) and company details (name and address for printing).
+
+### 🔑 Permissions & Users
+- Roles and permissions enforced across screens, a user-management screen and an audit-log viewer.
+
+### 🧰 Data Tools
+- Full backup export/restore, Excel import, and a fix for duplicated basic/allowances. The whole screen requires the `manageData` permission.
+
+---
+
+## 🧮 Tax & Insurance Calculation
+
+Each employee has a `salaryType`. The logic lives in `payroll_calculation_service.dart`, with `tax_service.dart` and `insurance_service.dart`.
+
+| Type | Meaning | Effect |
 |---|---|---|
-| **`gross` — إجمالي** | الراتب المُدخل هو الوعاء الضريبي | تُخصم الضريبة والتأمين منه مباشرة، فيقلّ صافي الموظف عن الرقم المتفق عليه |
-| **`net` — صافي** | الراتب المتفق عليه هو ما **يصل للموظف** بعد الخصومات | الشركة تتحمّل العبء؛ يرفع النظام الوعاء تلقائيًا (**gross-up**) ببحث ثنائي حتى يصل الصافي للرقم المتفق عليه بالضبط |
+| **`gross`** | The entered salary is the taxable base | Tax and insurance are deducted from it, so the employee's net is lower than the agreed figure |
+| **`net`** | The agreed salary is what the employee **receives** | The company bears the burden; the system raises the base automatically (**gross-up**) using binary search until net matches the agreed figure exactly |
 
-المنطق موحّد في **مصدر واحد** (`PayrollCalculationService`) ومطبّق بنفس الطريقة في ثلاثة أماكن: جدول شاشة المرتبات، تصدير PDF، وتوليد السجلات الشهرية، لتتطابق الأرقام في كل مكان.
+The logic has a **single source of truth** (`PayrollCalculationService`) applied identically in three places — the payroll table, PDF export and monthly record generation — so numbers match everywhere.
 
-**قواعد الحساب**
+**Calculation rules**
 
-1. الأجر التأميني = الأساسي + المتغيّر، بعد تطبيق الحدّين الأدنى والأقصى.
-2. وعاء الضريبة السنوي = `(الدخل الشهري − حصة الموظف في التأمينات) × 12 − الإعفاء الشخصي`، ثم تُطبَّق الشرائح على الجزء الواقع داخل كل شريحة.
-3. خصم التأمينات من وعاء الضريبة اختياري من إعدادات الضرائب.
-4. كل المبالغ الناتجة تُقرَّب لأقرب قرش.
+1. Insurable wage = basic + variable, after applying the minimum and maximum caps.
+2. Annual taxable base = `(monthly income − employee insurance share) × 12 − personal exemption`, then brackets apply to the portion inside each bracket.
+3. Deducting insurance from the taxable base is optional (tax settings).
+4. All resulting amounts are rounded to the nearest piaster.
 
-**القيم الافتراضية** (قابلة للتعديل من صفحة القواعد):
+**Defaults** (editable from the rules page):
 
-| البند | القيمة |
+| Item | Value |
 |---|---|
-| الإعفاء الشخصي السنوي | 20,000 جنيه |
-| تأمينات الموظف / الشركة | 11% / 18.75% |
-| الحد الأدنى / الأقصى للأجر التأميني | 2,000 / 12,600 |
-| الشرائح (سنويًا) | 0–40k: 0% · 40–55k: 10% · 55–70k: 15% · 70–200k: 20% · 200–400k: 22.5% · 400k–1.2M: 25% · فوق 1.2M: 27.5% |
+| Annual personal exemption | EGP 20,000 |
+| Insurance — employee / employer | 11% / 18.75% |
+| Min / max insurable wage | 2,000 / 12,600 |
+| Annual brackets | 0–40k: 0% · 40–55k: 10% · 55–70k: 15% · 70–200k: 20% · 200–400k: 22.5% · 400k–1.2M: 25% · above 1.2M: 27.5% |
 
 > [!WARNING]
-> هذه القيم افتراضية وتتغيّر كل سنة. **راجعها مع محاسبك القانوني** قبل الاعتماد عليها في صرف حقيقي.
+> These are default values and change every year. **Review them with your accountant** before relying on them for real payouts.
 
 ---
 
-## الأمان والمصادقة
+## 🛡️ Security & Authentication
 
-| الطبقة | الآلية |
+| Layer | Mechanism |
 |---|---|
-| **كلمات المرور** | PBKDF2-HMAC-SHA256 بـ 120 ألف تكرار وsalt عشوائي لكل مستخدم، وترقية تلقائية لأي تجزئة قديمة عند أول دخول ناجح |
-| **سياسة كلمة المرور** | 8 أحرف على الأقل مع حروف وأرقام |
-| **قفل الحساب** | بعد 5 محاولات فاشلة بمدة تتضاعف، وتُسجَّل كل محاولة في `audit_log` |
-| **الحساب الأول** | يُنشأ حساب `admin` عند أول تشغيل مع **تغيير كلمة المرور إجباريًا** (وكذلك بعد أي إعادة تعيين من المدير) |
-| **حماية الإدارة** | لا يمكن تعطيل أو حذف آخر مدير نشط، ولا تعطيل المستخدم لحسابه بنفسه |
-| **تشفير القاعدة** | SQLCipher على سطح المكتب، ومفتاح التشفير محفوظ في `flutter_secure_storage` (DPAPI / Keychain / Keystore) |
-| **العمليات الحساسة** | النسخ الاحتياطي والاستعادة ومسح البيانات تتطلب `manageData` وتُسجَّل في سجل العمليات |
+| **Passwords** | PBKDF2-HMAC-SHA256, 120K iterations, random per-user salt; legacy hashes are upgraded automatically on first successful login |
+| **Password policy** | At least 8 characters, with letters and digits |
+| **Account lockout** | After 5 failed attempts, with a doubling lock duration; every attempt is recorded in `audit_log` |
+| **First account** | An `admin` account is created on first run with a **forced password change** (also after any admin reset) |
+| **Admin protection** | The last active admin cannot be disabled or deleted, and users cannot disable themselves |
+| **Database encryption** | SQLCipher on desktop; the key is kept in `flutter_secure_storage` (DPAPI / Keychain / Keystore) |
+| **Sensitive operations** | Backup, restore and data wipe require `manageData` and are written to the audit log |
 
-### الأدوار الافتراضية
+### Default roles
 
-| الصلاحية | admin | hr | accountant | viewer |
+| Permission | admin | hr | accountant | viewer |
 |---|:-:|:-:|:-:|:-:|
-| عرض الموظفين `viewEmployees` | ✅ | ✅ | ✅ | ✅ |
-| إضافة/تعديل/حذف موظف | ✅ | — | — | — |
-| عرض المرتبات `viewPayroll` | ✅ | ✅ | ✅ | ✅ |
-| تشغيل المرتبات `runPayroll` | ✅ | ✅ | ✅ | — |
-| تعديل الرواتب `editSalary` | ✅ | ✅ | — | — |
-| التقارير `viewReports` | ✅ | ✅ | ✅ | ✅ |
-| تصدير التقارير `exportReports` | ✅ | ✅ | ✅ | — |
-| المستخدمون والأدوار والإعدادات والترخيص والبيانات | ✅ | — | — | — |
+| View employees `viewEmployees` | ✅ | ✅ | ✅ | ✅ |
+| Add / edit / delete employee | ✅ | — | — | — |
+| View payroll `viewPayroll` | ✅ | ✅ | ✅ | ✅ |
+| Run payroll `runPayroll` | ✅ | ✅ | ✅ | — |
+| Edit salaries `editSalary` | ✅ | ✅ | — | — |
+| Reports `viewReports` | ✅ | ✅ | ✅ | ✅ |
+| Export reports `exportReports` | ✅ | ✅ | ✅ | — |
+| Users, roles, settings, license, data | ✅ | — | — | — |
 
 > [!NOTE]
-> الأدوار النظامية تُعاد كتابتها من الكود عند كل تشغيل، فلا تُعدَّل من القاعدة.
+> System roles are rewritten from code on every launch, so they cannot be modified in the database.
 
 ---
 
-## الترخيص الأوفلاين
+## 🔐 Offline Licensing
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant C as العميل
-    participant A as التطبيق
-    participant V as المُصدر (license_admin_tool)
-    C->>A: يفتح التطبيق فتظهر بصمة الجهاز
-    C->>V: يرسل البصمة
-    V->>V: يبني الـ payload ← يشفّره AES-256-GCM ← يوقّعه Ed25519
-    V-->>C: ملف .lic
-    C->>A: يستورد الملف
-    A->>A: يتحقق من التوقيع + مطابقة بصمة الجهاز + عدّاد الأيام
-    A-->>C: تفعيل
+    participant C as Customer
+    participant A as App
+    participant V as Issuer (license_admin_tool)
+    C->>A: Opens the app; device fingerprint is shown
+    C->>V: Sends the fingerprint
+    V->>V: Builds payload → AES-256-GCM encrypt → Ed25519 sign
+    V-->>C: .lic file
+    C->>A: Imports the file
+    A->>A: Verifies signature + device fingerprint + day counter
+    A-->>C: Activated
 ```
 
-- **3 طبقات:** تعبئة ثنائية ← تشفير AES-256-GCM ← توقيع Ed25519.
-- **التفعيل** باستيراد ملف `.lic` عبر `file_picker` (بدل لصق كود base64 طويل).
-- **وضع تجريبي محلي** لمدة شهر، مقيّد بجهاز واحد، وعلامة «تم استخدامه» تُحفظ في القاعدة وفي ملف مختوم خارجها.
-- **أداة الإصدار** `license_admin_tool` في **مستودع مستقل**، ليبقى المفتاح الخاص بعيدًا تمامًا عن كود التطبيق.
+- **Three layers:** binary packing → AES-256-GCM encryption → Ed25519 signature.
+- **Activation** by importing a `.lic` file via `file_picker` (instead of pasting a long base64 code).
+- **Local trial mode** for one month, bound to a single device; the "used" flag is stored in the database and in a sealed file outside it.
+- **Issuing tool** `license_admin_tool` lives in a **separate repository**, keeping the private key away from the app code.
 
 > [!IMPORTANT]
-> الحماية الأوفلاين لا يمكن أن تكون مطلقة. الحماية الفعلية هي **توقيع Ed25519 + ربط الترخيص بالجهاز**؛ أما التشفير وختم HMAC فهما تعتيم يردع العبث العابر فقط.
-> بعد أي تدوير للمفاتيح تأكد أن المفتاح العام في `license_service.dart` هو الأحدث.
+> Offline protection can never be absolute. The real protection is the **Ed25519 signature + device binding**; encryption and the HMAC seal are obfuscation that only deters casual tampering.
+> After any key rotation, make sure the public key in `license_service.dart` is the latest.
 
 ---
 
-## قاعدة البيانات والنسخ الاحتياطي
+## 🗄️ Database & Backups
 
-- **المحرك:** SQLite عبر `sqflite` + `sqflite_common_ffi` (سطح المكتب) + `sqflite_common_ffi_web` (المتصفح)، مع SQLCipher عبر `hooks` في `pubspec.yaml`.
-- **المسار (Portable):** بجوار ملف `.exe` على ويندوز.
-- **المخطط:** مُرقَّم بإصدارات مع مسارات ترقية صريحة (`onUpgrade`)، والإصدار الحالي **12**.
-- **الجداول:** `users` · `roles` · `activated_devices` · `license` · `app_meta` · `employees` · `attendance` · `payroll_records` · `salary_payments` · `audit_log`.
+- **Engine:** SQLite via `sqflite` + `sqflite_common_ffi` (desktop) + `sqflite_common_ffi_web` (browser), with SQLCipher via `hooks` in `pubspec.yaml`.
+- **Location (portable):** next to the `.exe` on Windows.
+- **Schema:** versioned with explicit upgrade paths (`onUpgrade`); current version is **12**.
+- **Tables:** `users` · `roles` · `activated_devices` · `license` · `app_meta` · `employees` · `attendance` · `payroll_records` · `salary_payments` · `audit_log`.
 
 > [!WARNING]
-> **خذ نسخة من ملف القاعدة قبل أول تشغيل بعد أي تحديث.**
+> **Back up the database file before the first launch after any update.**
 
-### مستويات النسخ الاحتياطي
+### Backup tiers
 
-| المستوى | الموقع |
+| Tier | Location |
 |---|---|
-| 1 | مجلد `backups` ضمن مجلد بيانات التطبيق |
-| 2 | مجلد `backups` بجوار ملف التشغيل |
-| 3 | مجلد خارجي اختياري يحدده المستخدم (يدعم OneDrive) |
+| 1 | `backups` folder inside the app data folder |
+| 2 | `backups` folder next to the executable |
+| 3 | Optional external folder chosen by the user (OneDrive-friendly) |
 
-### نسخة JSON من شاشة أدوات البيانات
+### JSON backup from the Data Tools screen
 
-- **تتضمن:** الموظفين، المرتبات، الدفعات، الحضور. **لا تتضمن** الترخيص ولا المستخدمين وكلمات السر عمدًا، حتى لا تُستخدم نسخة من جهاز مرخّص على جهاز آخر.
-- **الاستعادة** تفحص الملف بالكامل قبل أي تعديل (الإصدار والجداول والأعمدة)، وتُنفَّذ داخل **transaction واحدة** (إن فشل أي صف لا يتغيّر شيء)، والاستبدال الكامل يطلب تأكيدًا صريحًا.
+- **Includes:** employees, payroll, payments, attendance. **Intentionally excludes** the license, users and passwords, so a backup from a licensed machine can't be reused on another.
+- **Restore** validates the entire file before changing anything (version, tables, columns) and runs inside **one transaction** (if any row fails, nothing changes). A full replace requires explicit confirmation.
 
 > [!CAUTION]
-> ملف نسخة JSON **غير مشفّر** ويحتوي بيانات حساسة (الرقم القومي، الرواتب، البيانات البنكية). احفظه في مكان آمن ولا ترسله عبر قنوات غير موثوقة.
+> The JSON backup is **not encrypted** and contains sensitive data (national IDs, salaries, bank details). Store it safely and never send it over untrusted channels.
 
 ---
 
-## هيكل المشروع
+## 📂 Project Structure
 
 ```text
 lib/
-├─ controllers/        تحكّم الحالة (Provider): موظفون، حضور
+├─ controllers/        State (Provider): employees, attendance
 ├─ core/
-│  ├─ audit/           سجل العمليات (audit_log)
-│  ├─ auth/            مستخدمون، أدوار، صلاحيات، دخول وقفل
-│  ├─ database/        المصدر الوحيد لقاعدة البيانات (app_database.dart)
-│  ├─ license/         تشفير وتوقيع وتفعيل الترخيص + بصمة الجهاز
-│  ├─ security/        تجزئة كلمات المرور (PBKDF2) ومفتاح القاعدة
-│  ├─ responsive/      نقاط الكسر للتجاوب
-│  ├─ theme/           الثيم
-│  └─ utils/           السجل (logger) وأدوات مساعدة
-├─ database/           طبقة الوصول للبيانات لكل كيان (Storage)
-├─ models/             موظف، سجل راتب، دفعة صرف، حضور
-├─ services/           ضريبة، تأمينات، محرك الرواتب، Excel، PDF، نسخ احتياطي
+│  ├─ audit/           Audit log (audit_log)
+│  ├─ auth/            Users, roles, permissions, login & lockout
+│  ├─ database/        Single source for the database (app_database.dart)
+│  ├─ license/         License crypto, signing, activation + device fingerprint
+│  ├─ security/        Password hashing (PBKDF2) and DB key
+│  ├─ responsive/      Responsive breakpoints
+│  ├─ theme/           Theme
+│  └─ utils/           Logger and helpers
+├─ database/           Per-entity data access layer (Storage)
+├─ models/             Employee, payroll record, payment, attendance
+├─ services/           Tax, insurance, payroll engine, Excel, PDF, backup
 ├─ views/
-│  ├─ attendance/      شاشات الحضور
-│  ├─ auth/            تسجيل الدخول وتغيير كلمة المرور
-│  ├─ backup/          أدوات النسخ الاحتياطي والصيانة
-│  ├─ employee/        قائمة ونموذج وبطاقة الموظف
-│  ├─ license/         بوابة تفعيل الترخيص
-│  ├─ payroll/         المرتبات، التفاصيل، السابقة، الدفعات
-│  ├─ reports/         تقارير كاش/بنك
-│  ├─ settings/        إعدادات عامة، قواعد العمل، بيانات الشركة
-│  ├─ tax_settings/    إعدادات الضرائب
-│  ├─ users/           إدارة المستخدمين وسجل العمليات
-│  └─ shared/          مكونات مشتركة (scaffold, permission gate, ...)
+│  ├─ attendance/      Attendance screens
+│  ├─ auth/            Login and password change
+│  ├─ backup/          Backup and maintenance tools
+│  ├─ employee/        Employee list, form and card
+│  ├─ license/         License activation gate
+│  ├─ payroll/         Payroll, details, history, payments
+│  ├─ reports/         Cash / bank reports
+│  ├─ settings/        General settings, rules, company details
+│  ├─ tax_settings/    Tax settings
+│  ├─ users/           User management and audit log
+│  └─ shared/          Shared components (scaffold, permission gate, ...)
 └─ main.dart
 assets/
 ├─ lang/               ar.json · en.json (easy_localization)
@@ -265,49 +248,53 @@ flowchart LR
 
 ---
 
-## التقنيات المستخدمة
+## 🛠️ Tech Stack
 
-| الغرض | المكتبة |
+| Purpose | Library |
 |---|---|
-| إدارة الحالة | `provider` |
-| قاعدة البيانات | `sqflite`, `sqflite_common_ffi`, `sqflite_common_ffi_web`, `sqlite3` (SQLCipher) |
-| التنقل | `go_router` |
-| التوطين | `easy_localization` (عربي/إنجليزي) |
-| التشفير والتوقيع | `cryptography` (Ed25519, AES-256-GCM), `crypto`, `pointycastle` |
-| التخزين الآمن | `flutter_secure_storage`, `shared_preferences` |
-| بصمة الجهاز | `device_info_plus` |
-| الملفات | `file_picker`, `path_provider`, `open_file`, `share_plus` |
+| State management | `provider` |
+| Database | `sqflite`, `sqflite_common_ffi`, `sqflite_common_ffi_web`, `sqlite3` (SQLCipher) |
+| Navigation | `go_router` |
+| Localization | `easy_localization` (Arabic / English) |
+| Crypto & signing | `cryptography` (Ed25519, AES-256-GCM), `crypto`, `pointycastle` |
+| Secure storage | `flutter_secure_storage`, `shared_preferences` |
+| Device fingerprint | `device_info_plus` |
+| Files | `file_picker`, `path_provider`, `open_file`, `share_plus` |
 | Excel | `excel` |
-| PDF والعربية | `pdf`, `printing`, `arabic_reshaper`, `bidi` |
+| PDF & Arabic | `pdf`, `printing`, `arabic_reshaper`, `bidi` |
 
 ---
 
-## البدء السريع
+## 🚀 Getting Started
 
-**المتطلبات**
+**Requirements**
 
-- Flutter (قناة stable) بإصدار **3.47 أو أحدث** (Dart 3.13+).
-- على Windows: Visual Studio مع حِمل **Desktop development with C++**.
+- Flutter (stable channel) **3.47 or newer** (Dart 3.13+).
+- On Windows: Visual Studio with the **Desktop development with C++** workload.
 
 ```bash
 git clone https://github.com/ahmedtharwat19/payrolls.git
 cd payrolls
 flutter pub get
-flutter run -d windows        # أو: -d <device_id>
+flutter run -d windows        # or: -d <device_id>
 ```
 
-**البناء**
+**Build**
 
 ```bash
 flutter build windows --release
-flutter build appbundle --release   # يحتاج android/key.properties (انظر قسم الإصدار والتوقيع)
+flutter build appbundle --release   # requires android/key.properties (see Release & Signing)
 ```
+
+### First launch
+1. Activate a license via a `.lic` file (or start the local trial).
+2. Sign in with the initial `admin` account; you will be **forced to change the password** immediately.
 
 ---
 
-## الاستيراد الجماعي من Excel
+## 📥 Bulk Excel Import
 
-الصف الأول **Header**، والأعمدة بالترتيب:
+The first row is the **header**; columns in order:
 
 ```text
 name | department | jobTitle | nationalId | hireDate | contractType |
@@ -315,67 +302,71 @@ employeeType | insuranceCode | basicSalary | allowances | deductions |
 salaryType | paymentMethod | bankName | bankAccount | bankSwift | bankIban
 ```
 
-- العمود الوحيد الإلزامي: **`name`**.
-- من شاشة **أدوات الصيانة (Data Tools)** تستطيع تصدير قالب فارغ، أو تصحيح بيانات قديمة تكرّر فيها الأساسي والبدلات بسبب استيراد سابق.
+- The only required column is **`name`**.
+- From **Data Tools** you can export a blank template, or fix legacy data where basic/allowances were duplicated by an earlier import.
 
 ---
 
-## الاختبارات والتكامل المستمر
+## 🧪 Testing & CI
 
 ```bash
 flutter analyze
 flutter test
 ```
 
-- تغطي الاختبارات تجزئة كلمات المرور (متجهات PBKDF2) والضريبة والتأمينات وحساب الصافي.
-- الأمران يعملان تلقائيًا في **GitHub Actions** ([`ci.yml`](.github/workflows/ci.yml)) عند كل `push` و`Pull Request`.
+- Tests cover password hashing (PBKDF2 vectors), tax, insurance and net calculation.
+- Both commands run automatically in **GitHub Actions** ([`ci.yml`](.github/workflows/ci.yml)) on every `push` and pull request.
 
 ---
 
-## الإصدار والتوقيع
+## 📦 Release & Signing
 
 **Android**
 
 ```bash
-./tools/create_keystore.sh          # مرة واحدة: ينشئ الـ keystore ويكتب android/key.properties
+./tools/create_keystore.sh          # once: creates the keystore and writes android/key.properties
 flutter build appbundle --release
 ```
 
 > [!CAUTION]
-> احتفظ بنسخة احتياطية من ملف `.jks` وكلمات مروره خارج الجهاز. لو ضاع لن تستطيع تحديث التطبيق بنفس التوقيع. الملفان `key.properties` و`.jks` مُستبعَدان من Git ولا يُرفعان أبدًا.
+> Keep an off-device backup of the `.jks` file and its passwords. If lost, you cannot update the app with the same signature. `key.properties` and the `.jks` are excluded from Git and must never be committed.
 
-**ملاحظات أمان للمطوّرين**
+**Security notes for developers**
 
-- **لا تضع أي مفتاح خاص** (private key) في هذا المستودع أبدًا. مفتاح توقيع Ed25519 يبقى حصرًا في مستودع `license_admin_tool` المنفصل.
-- عند تسريب أي مفتاح: دوّر الزوج بالكامل، حدّث المفتاح العام في `license_service.dart`، نظّف تاريخ Git (`git filter-repo`)، وأعد إصدار ملفات `.lic` لكل العملاء.
-- خطوات تنظيف التاريخ وتوقيع أندرويد ومراجعة قيم الضرائب في [`SECURITY_AND_RELEASE.md`](SECURITY_AND_RELEASE.md).
+- **Never put a private key** in this repository. The Ed25519 signing key lives exclusively in the separate `license_admin_tool` repository.
+- If any key leaks: rotate the whole pair, update the public key in `license_service.dart`, clean Git history (`git filter-repo`), and reissue `.lic` files for all customers.
+- History cleanup, Android signing and tax-value review steps are in [`SECURITY_AND_RELEASE.md`](SECURITY_AND_RELEASE.md).
 
 ---
 
-## الوثائق ذات الصلة
+## 📚 Related Documents
 
-| الملف | المحتوى |
+| File | Contents |
 |---|---|
-| [`SECURITY_AND_RELEASE.md`](SECURITY_AND_RELEASE.md) | قائمة الأمان والإصدار: التاريخ، توقيع أندرويد، مراجعة المحاسب، الحدود المعروفة |
-| [`PAYROLL_FEATURES_README.md`](PAYROLL_FEATURES_README.md) | دليل دمج تاريخي لمرحلة سابقة (بعض مساراته قديمة) |
+| [`SECURITY_AND_RELEASE.md`](SECURITY_AND_RELEASE.md) | Security & release checklist: history, Android signing, accountant review, known limits |
+| [`PAYROLL_FEATURES_README.md`](PAYROLL_FEATURES_README.md) | Historical integration guide from an earlier stage (some paths are outdated) |
 
 ---
 
-## خارطة الطريق
+## 🗺️ Roadmap
 
-- [ ] ربط سجلات الرواتب المولّدة سابقًا (`PayrollRecord`) بتحديثات لاحقة على بيانات الموظف — حاليًا تعديل بيانات الموظف بعد توليد سجل الشهر لا يُحدّث السجل التاريخي تلقائيًا.
-- [ ] توسيع الاختبارات لتشمل `AuthService` (القفل، آخر مدير) والنسخ الاحتياطي، واختبارات ودجت لشاشتي الدخول والمستخدمين.
+- [ ] Link previously generated payroll records (`PayrollRecord`) to later employee-data changes — currently, editing an employee after a month's record is generated does not update that historical record automatically.
+- [ ] Expand tests to cover `AuthService` (lockout, last admin) and backups, plus widget tests for the login and users screens.
 
 ---
 
-## حقوق الملكية
+## 📞 Contact
 
-جميع الحقوق محفوظة © PureSip. التطبيق مرخَّص تجاريًا عبر ملفات `.lic` مربوطة بالجهاز.
+- **Developer:** Ahmed Tharwat — [@ahmedtharwat19](https://github.com/ahmedtharwat19)
 
-</div>
+## ⚖️ License
+
+All rights reserved © PureSip. The application is commercially licensed through device-bound `.lic` files.
+
+---
 
 <div align="center">
 
-**صُمّم بعناية لضمان الأمان والدقة المالية.**
+**Built with care for security and financial accuracy.**
 
 </div>

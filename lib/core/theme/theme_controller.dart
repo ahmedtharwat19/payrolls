@@ -2,7 +2,7 @@
 //
 // ✅ تحكم مركزي في الوضع الليلي/النهاري لكل التطبيق، مع حفظ الاختيار
 // محليًا (SharedPreferences) عشان يفضل نفس الاختيار بعد ما تقفل التطبيق.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeController extends ChangeNotifier {

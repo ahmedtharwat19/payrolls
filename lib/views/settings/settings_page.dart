@@ -1,13 +1,17 @@
 // lib/views/settings/settings_page.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
+import 'package:puresip_payrolls/views/settings/attendance_settings_page.dart';
 import 'package:puresip_payrolls/views/settings/backup_settings_page.dart';
+import 'package:puresip_payrolls/views/settings/cloud_backup_page.dart';
+import 'package:puresip_payrolls/views/settings/departments_page.dart';
 import '../../services/tax_service.dart';
 import '../../services/insurance_service.dart';
-import '../../core/utils/logger.dart';
+import '../../core/auth/auth_service.dart'; // ✅ تمت الإضافة
+import '../../core/auth/permission.dart'; // ✅ تمت الإضافة
 import '../tax_settings/tax_settings_screen.dart';
-import 'company_settings_page.dart'; // ✅ تأكد إن المسار ده صح
+import 'company_settings_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -70,20 +74,16 @@ class _SettingsPageState extends State<SettingsPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('settings_saved_success'.tr())), // ✅ ترجمة
+          SnackBar(content: Text('settings_saved_success'.tr())),
         );
       }
-
-      Logger.info('✅ Settings saved successfully');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  'settings_save_error'.tr(args: [e.toString()]))), // ✅ ترجمة
+              content: Text('settings_save_error'.tr(args: [e.toString()]))),
         );
       }
-      Logger.error('❌ Failed to save settings: $e');
     }
   }
 
@@ -92,7 +92,7 @@ class _SettingsPageState extends State<SettingsPage> {
     await taxService.resetToEgyptianBrackets();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('tax_brackets_reset_success'.tr())), // ✅ ترجمة
+        SnackBar(content: Text('tax_brackets_reset_success'.tr())),
       );
     }
   }
@@ -100,6 +100,13 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // ✅ قراءة صلاحيات المستخدم الحالي
+    final auth = context.watch<AuthService>();
+    final canManageSettings = auth.can(Permission.manageSettings);
+    final canManageData = auth.can(Permission.manageData);
+    final canManageAttendanceSettings =
+        auth.can(Permission.manageAttendanceSettings);
 
     return Scaffold(
       appBar: AppBar(
@@ -111,194 +118,277 @@ class _SettingsPageState extends State<SettingsPage> {
         padding: const EdgeInsets.all(16),
         children: [
           // ==========================================
-          // 1. قسم بيانات الشركة (جديد)
+          // 1. قسم بيانات الشركة (يحتاج صلاحية الإعدادات)
           // ==========================================
-          Card(
-            elevation: 2,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor:
-                    theme.colorScheme.primary.withValues(alpha: 0.1),
-                child: Icon(Icons.business, color: theme.colorScheme.primary),
-              ),
-              title: Text('company_data'.tr(),
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('company_data_subtitle'.tr()),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const CompanySettingsPage()),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ==========================================
-          // 2. قسم الضرائب
-          // ==========================================
-          Card(
-            elevation: 2,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.account_balance,
-                          color: theme.colorScheme.primary),
-                      const SizedBox(width: 8),
-                      Text(
-                        'tax_settings'.tr(),
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary),
-                      ),
-                    ],
-                  ),
-                  const Divider(),
-                  _buildTextField(
-                      controller: _taxRateController,
-                      label: 'tax_rate'.tr(),
-                      suffix: '%'),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                      controller: _overtimeRateController,
-                      label: 'overtime_rate'.tr(),
-                      suffix: 'x'),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                      controller: _latePenaltyController,
-                      label: 'late_penalty'.tr(),
-                      suffix: 'EGP'),
-                  const SizedBox(height: 8),
-                  const Divider(),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.edit, color: Colors.orange),
-                    title: Text('edit_tax_brackets'.tr()),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const TaxSettingsScreen()));
-                    },
-                  ),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.restore, color: Colors.red),
-                    title: Text('reset_tax_brackets'.tr()),
-                    onTap: _resetToEgyptianBrackets,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ==========================================
-          // 3. قسم التأمينات
-          // ==========================================
-          Card(
-            elevation: 2,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.security, color: theme.colorScheme.secondary),
-                      const SizedBox(width: 8),
-                      Text(
-                        'insurance_settings'.tr(),
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.secondary),
-                      ),
-                    ],
-                  ),
-                  const Divider(),
-                  _buildTextField(
-                      controller: _insuranceEmployeeController,
-                      label: 'insurance_employee'.tr(),
-                      suffix: '%'),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                      controller: _insuranceCompanyController,
-                      label: 'insurance_company'.tr(),
-                      suffix: '%'),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                      controller: _minInsuranceController,
-                      label: 'min_insurance'.tr(),
-                      suffix: 'EGP'),
-                  const SizedBox(height: 12),
-                  _buildTextField(
-                      controller: _maxInsuranceController,
-                      label: 'max_insurance'.tr(),
-                      suffix: 'EGP'),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ==========================================
-          // 4. قسم النسخ الاحتياطي
-          // ==========================================
-          Card(
-            elevation: 2,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor:
-                    theme.colorScheme.tertiary.withValues(alpha: 0.1),
-                child: Icon(Icons.backup, color: theme.colorScheme.tertiary),
-              ),
-              title: Text('backup_settings_title'.tr(),
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('backup_settings_subtitle'.tr()),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const BackupSettingsPage()),
-              ),
-            ),
-          ),
-          const SizedBox(height: 32),
-
-          // ==========================================
-          // زر الحفظ الرئيسي
-          // ==========================================
-          ElevatedButton(
-            onPressed: _saveSettings,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+          if (canManageSettings) ...[
+            Card(
+              elevation: 2,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
-              elevation: 3,
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor:
+                      theme.colorScheme.primary.withValues(alpha: 0.1),
+                  child: Icon(Icons.business, color: theme.colorScheme.primary),
+                ),
+                title: Text('company_data'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('company_data_subtitle'.tr()),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const CompanySettingsPage()));
+                },
+              ),
             ),
-            child: Text(
-              'save_settings'.tr(),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            const SizedBox(height: 16),
+          ],
+
+          // ==========================================
+          // 2. قسم إدارة الأقسام (يحتاج صلاحية الإعدادات)
+// ضيف ده جوه الـ ListView في مكان مناسب (تحت بيانات الشركة مثلاً)
+          if (canManageSettings) ...[
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.purple.withValues(alpha: 0.1),
+                  child: const Icon(Icons.category, color: Colors.purple),
+                ),
+                title: Text('departments_management'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('departments_management_hint'.tr()),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DepartmentsPage()),
+                ),
+              ),
             ),
-          ),
+            const SizedBox(height: 16),
+          ],
+
+          // ==========================================
+          // 2. قسم الضرائب والتأمينات (يحتاج صلاحية الإعدادات)
+          // ==========================================
+          if (canManageSettings) ...[
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.account_balance,
+                            color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text('tax_settings'.tr(),
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.primary)),
+                      ],
+                    ),
+                    const Divider(),
+                    _buildTextField(
+                        controller: _taxRateController,
+                        label: 'tax_rate'.tr(),
+                        suffix: '%'),
+                    const SizedBox(height: 12),
+                    _buildTextField(
+                        controller: _overtimeRateController,
+                        label: 'overtime_rate'.tr(),
+                        suffix: 'x'),
+                    const SizedBox(height: 12),
+                    _buildTextField(
+                        controller: _latePenaltyController,
+                        label: 'late_penalty'.tr(),
+                        suffix: 'EGP'),
+                    const SizedBox(height: 8),
+                    const Divider(),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.edit, color: Colors.orange),
+                      title: Text('edit_tax_brackets'.tr()),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const TaxSettingsScreen())),
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.restore, color: Colors.red),
+                      title: Text('reset_tax_brackets'.tr()),
+                      onTap: _resetToEgyptianBrackets,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.security,
+                            color: theme.colorScheme.secondary),
+                        const SizedBox(width: 8),
+                        Text('insurance_settings'.tr(),
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.secondary)),
+                      ],
+                    ),
+                    const Divider(),
+                    _buildTextField(
+                        controller: _insuranceEmployeeController,
+                        label: 'insurance_employee'.tr(),
+                        suffix: '%'),
+                    const SizedBox(height: 12),
+                    _buildTextField(
+                        controller: _insuranceCompanyController,
+                        label: 'insurance_company'.tr(),
+                        suffix: '%'),
+                    const SizedBox(height: 12),
+                    _buildTextField(
+                        controller: _minInsuranceController,
+                        label: 'min_insurance'.tr(),
+                        suffix: 'EGP'),
+                    const SizedBox(height: 12),
+                    _buildTextField(
+                        controller: _maxInsuranceController,
+                        label: 'max_insurance'.tr(),
+                        suffix: 'EGP'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // ==========================================
+          // 3. قسم إعدادات الحضور (يحتاج صلاحية الحضور)
+          // ==========================================
+          if (canManageAttendanceSettings) ...[
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.blue.withValues(alpha: 0.1),
+                  child: const Icon(Icons.fingerprint, color: Colors.blue),
+                ),
+                title: Text('attendance_settings'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('attendance_settings_hint'.tr()),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const AttendanceSettingsPage())),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // ==========================================
+          // 4. قسم النسخ الاحتياطي (يحتاج صلاحية البيانات)
+          // ==========================================
+          if (canManageData) ...[
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor:
+                      theme.colorScheme.tertiary.withValues(alpha: 0.1),
+                  child: Icon(Icons.backup, color: theme.colorScheme.tertiary),
+                ),
+                title: Text('backup_settings_title'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('backup_settings_subtitle'.tr()),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const BackupSettingsPage())),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor:
+                      theme.colorScheme.secondary.withValues(alpha: 0.1),
+                  child: Icon(Icons.cloud, color: theme.colorScheme.secondary),
+                ),
+                title: Text('cloud_backup'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('cloud_backup_subtitle'.tr()),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const CloudBackupPage())),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          // ==========================================
+          // زر الحفظ الرئيسي (يظهر فقط لو المستخدم عنده صلاحية تعديل الإعدادات)
+          // ==========================================
+          if (canManageSettings)
+            ElevatedButton(
+              onPressed: _saveSettings,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                elevation: 3,
+              ),
+              child: Text('save_settings'.tr(),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+
+          // رسالة لو المستخدم معندوش أي صلاحية إعدادات
+          if (!canManageSettings &&
+              !canManageData &&
+              !canManageAttendanceSettings)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Text(
+                  'no_permission'.tr(),
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+
           const SizedBox(height: 32),
         ],
       ),

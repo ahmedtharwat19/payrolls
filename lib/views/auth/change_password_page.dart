@@ -1,6 +1,6 @@
 // lib/views/auth/change_password_page.dart
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import '../../core/auth/auth_service.dart';
 
@@ -54,8 +54,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text('password_changed_ok'.tr())));
     if (widget.nextPage != null) {
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => widget.nextPage!));
+      Navigator.of(context)
+          .pushReplacement(MaterialPageRoute(builder: (_) => widget.nextPage!));
     } else {
       Navigator.of(context).pop(true);
     }
@@ -93,8 +93,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   TextField(
                     controller: _newCtrl,
                     obscureText: true,
-                    decoration:
-                        InputDecoration(labelText: 'new_password'.tr()),
+                    decoration: InputDecoration(labelText: 'new_password'.tr()),
                   ),
                   const SizedBox(height: 12),
                   TextField(

@@ -1,5 +1,5 @@
 // lib/views/settings/rules_page.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 import '../../services/tax_service.dart';
@@ -50,14 +50,13 @@ class _RulesPageState extends State<RulesPage> {
   late TaxService _taxService;
   late InsuranceService _insuranceService;
 
-
   @override
   void initState() {
     super.initState();
     // ✅ تهيئة الخدمات فوراً
     _taxService = context.read<TaxService>();
     _insuranceService = context.read<InsuranceService>();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // تحميل الإعدادات المحفوظة أولًا قبل ملء الحقول.
       await _taxService.loadSettings();
@@ -84,9 +83,12 @@ class _RulesPageState extends State<RulesPage> {
       final from = (b['from'] as num?)?.toDouble() ?? 0.0;
       final to = (b['to'] as num?)?.toDouble();
       final rate = (b['rate'] as num?)?.toDouble() ?? 0.0;
-      _bracketFromControllers.add(TextEditingController(text: from.toStringAsFixed(0)));
-      _bracketToControllers.add(TextEditingController(text: to == null ? '∞' : to.toStringAsFixed(0)));
-      _bracketRateControllers.add(TextEditingController(text: (rate * 100).toStringAsFixed(2)));
+      _bracketFromControllers
+          .add(TextEditingController(text: from.toStringAsFixed(0)));
+      _bracketToControllers.add(TextEditingController(
+          text: to == null ? '∞' : to.toStringAsFixed(0)));
+      _bracketRateControllers
+          .add(TextEditingController(text: (rate * 100).toStringAsFixed(2)));
     }
     if (mounted) setState(() {});
   }
@@ -94,21 +96,26 @@ class _RulesPageState extends State<RulesPage> {
   void _loadSettings() {
     try {
       _taxRateController.text = (_taxService.taxRate * 100).toStringAsFixed(2);
-      _overtimeRateController.text = _taxService.overtimeRate.toStringAsFixed(2);
+      _overtimeRateController.text =
+          _taxService.overtimeRate.toStringAsFixed(2);
       _latePenaltyController.text = _taxService.latePenalty.toStringAsFixed(2);
-      _personalExemptionController.text = _taxService.personalExemption.toStringAsFixed(2);
+      _personalExemptionController.text =
+          _taxService.personalExemption.toStringAsFixed(2);
       _deductInsuranceFromTaxBase = _taxService.deductInsuranceFromTaxBase;
 
-      _insuranceEmployeeController.text = (_insuranceService.employeeRate * 100).toStringAsFixed(2);
-      _insuranceCompanyController.text = (_insuranceService.companyRate * 100).toStringAsFixed(2);
-      _minInsuranceController.text = _insuranceService.minInsurance.toStringAsFixed(2);
-      _maxInsuranceController.text = _insuranceService.maxInsurance.toStringAsFixed(2);
+      _insuranceEmployeeController.text =
+          (_insuranceService.employeeRate * 100).toStringAsFixed(2);
+      _insuranceCompanyController.text =
+          (_insuranceService.companyRate * 100).toStringAsFixed(2);
+      _minInsuranceController.text =
+          _insuranceService.minInsurance.toStringAsFixed(2);
+      _maxInsuranceController.text =
+          _insuranceService.maxInsurance.toStringAsFixed(2);
 
       _bankNameController.text = _taxService.bankName;
       _bankAccountController.text = _taxService.bankAccount;
       _bankSwiftController.text = _taxService.bankSwift;
       _bankIbanController.text = _taxService.bankIban;
-
     } catch (e) {
       _setDefaultValues();
     }
@@ -118,11 +125,16 @@ class _RulesPageState extends State<RulesPage> {
     _taxRateController.text = '0.00';
     _overtimeRateController.text = '1.50';
     _latePenaltyController.text = '50.00';
-    _personalExemptionController.text = TaxService.defaultPersonalExemption.toStringAsFixed(2);
-    _insuranceEmployeeController.text = (InsuranceService.defaultEmployeeRate * 100).toStringAsFixed(2);
-    _insuranceCompanyController.text = (InsuranceService.defaultCompanyRate * 100).toStringAsFixed(2);
-    _minInsuranceController.text = InsuranceService.defaultMinInsurance.toStringAsFixed(2);
-    _maxInsuranceController.text = InsuranceService.defaultMaxInsurance.toStringAsFixed(2);
+    _personalExemptionController.text =
+        TaxService.defaultPersonalExemption.toStringAsFixed(2);
+    _insuranceEmployeeController.text =
+        (InsuranceService.defaultEmployeeRate * 100).toStringAsFixed(2);
+    _insuranceCompanyController.text =
+        (InsuranceService.defaultCompanyRate * 100).toStringAsFixed(2);
+    _minInsuranceController.text =
+        InsuranceService.defaultMinInsurance.toStringAsFixed(2);
+    _maxInsuranceController.text =
+        InsuranceService.defaultMaxInsurance.toStringAsFixed(2);
   }
 
   Future<void> _saveSettings() async {
@@ -130,13 +142,18 @@ class _RulesPageState extends State<RulesPage> {
       _taxService.taxRate = double.parse(_taxRateController.text) / 100;
       _taxService.overtimeRate = double.parse(_overtimeRateController.text);
       _taxService.latePenalty = double.parse(_latePenaltyController.text);
-      _taxService.personalExemption = double.parse(_personalExemptionController.text);
+      _taxService.personalExemption =
+          double.parse(_personalExemptionController.text);
       _taxService.deductInsuranceFromTaxBase = _deductInsuranceFromTaxBase;
 
-      _insuranceService.employeeRate = double.parse(_insuranceEmployeeController.text) / 100;
-      _insuranceService.companyRate = double.parse(_insuranceCompanyController.text) / 100;
-      _insuranceService.minInsurance = double.parse(_minInsuranceController.text);
-      _insuranceService.maxInsurance = double.parse(_maxInsuranceController.text);
+      _insuranceService.employeeRate =
+          double.parse(_insuranceEmployeeController.text) / 100;
+      _insuranceService.companyRate =
+          double.parse(_insuranceCompanyController.text) / 100;
+      _insuranceService.minInsurance =
+          double.parse(_minInsuranceController.text);
+      _insuranceService.maxInsurance =
+          double.parse(_maxInsuranceController.text);
 
       _taxService.bankName = _bankNameController.text;
       _taxService.bankAccount = _bankAccountController.text;
@@ -148,7 +165,8 @@ class _RulesPageState extends State<RulesPage> {
         final from = double.tryParse(_bracketFromControllers[i].text) ?? 0;
         final toText = _bracketToControllers[i].text;
         final to = toText == '∞' ? null : double.tryParse(toText);
-        final rate = (double.tryParse(_bracketRateControllers[i].text) ?? 0) / 100;
+        final rate =
+            (double.tryParse(_bracketRateControllers[i].text) ?? 0) / 100;
         brackets.add({'from': from, 'to': to, 'rate': rate});
       }
       _taxService.taxBrackets = brackets;
@@ -222,7 +240,8 @@ class _RulesPageState extends State<RulesPage> {
                 const SizedBox(width: 8),
                 Text(
                   'tax_brackets'.tr(),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -243,22 +262,34 @@ class _RulesPageState extends State<RulesPage> {
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade200,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(8)),
                     ),
                     child: const Row(
                       children: [
-                        Expanded(flex: 2, child: Text('From (EGP)', style: TextStyle(fontWeight: FontWeight.bold))),
-                        Expanded(flex: 2, child: Text('To (EGP)', style: TextStyle(fontWeight: FontWeight.bold))),
-                        Expanded(flex: 1, child: Text('Rate %', style: TextStyle(fontWeight: FontWeight.bold))),
+                        Expanded(
+                            flex: 2,
+                            child: Text('From (EGP)',
+                                style: TextStyle(fontWeight: FontWeight.bold))),
+                        Expanded(
+                            flex: 2,
+                            child: Text('To (EGP)',
+                                style: TextStyle(fontWeight: FontWeight.bold))),
+                        Expanded(
+                            flex: 1,
+                            child: Text('Rate %',
+                                style: TextStyle(fontWeight: FontWeight.bold))),
                         SizedBox(width: 40),
                       ],
                     ),
                   ),
                   ...List.generate(_bracketFromControllers.length, (index) {
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                        border: Border(
+                            bottom: BorderSide(color: Colors.grey.shade200)),
                       ),
                       child: Row(
                         children: [
@@ -268,7 +299,8 @@ class _RulesPageState extends State<RulesPage> {
                               controller: _bracketFromControllers[index],
                               decoration: const InputDecoration(
                                 border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
                               ),
                               keyboardType: TextInputType.number,
                             ),
@@ -280,7 +312,8 @@ class _RulesPageState extends State<RulesPage> {
                               controller: _bracketToControllers[index],
                               decoration: const InputDecoration(
                                 border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
                               ),
                               keyboardType: TextInputType.number,
                             ),
@@ -292,7 +325,8 @@ class _RulesPageState extends State<RulesPage> {
                               controller: _bracketRateControllers[index],
                               decoration: const InputDecoration(
                                 border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
                                 suffixText: '%',
                               ),
                               keyboardType: TextInputType.number,
@@ -300,7 +334,8 @@ class _RulesPageState extends State<RulesPage> {
                           ),
                           const SizedBox(width: 8),
                           IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                            icon: const Icon(Icons.delete_outline,
+                                color: Colors.red, size: 20),
                             onPressed: () {
                               if (_bracketFromControllers.length > 1) {
                                 setState(() {
@@ -322,9 +357,12 @@ class _RulesPageState extends State<RulesPage> {
                       child: TextButton.icon(
                         onPressed: () {
                           setState(() {
-                            _bracketFromControllers.add(TextEditingController(text: '0'));
-                            _bracketToControllers.add(TextEditingController(text: '∞'));
-                            _bracketRateControllers.add(TextEditingController(text: '0'));
+                            _bracketFromControllers
+                                .add(TextEditingController(text: '0'));
+                            _bracketToControllers
+                                .add(TextEditingController(text: '∞'));
+                            _bracketRateControllers
+                                .add(TextEditingController(text: '0'));
                           });
                         },
                         icon: const Icon(Icons.add_circle, color: Colors.green),
@@ -352,7 +390,9 @@ class _RulesPageState extends State<RulesPage> {
               children: [
                 Icon(Icons.receipt_long, color: Colors.orange.shade700),
                 const SizedBox(width: 8),
-                Text('tax_settings'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('tax_settings'.tr(),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 16),
@@ -362,7 +402,8 @@ class _RulesPageState extends State<RulesPage> {
             const SizedBox(height: 12),
             _buildTextField(_latePenaltyController, 'late_penalty'.tr(), 'EGP'),
             const SizedBox(height: 12),
-            _buildTextField(_personalExemptionController, 'الإعفاء الشخصي السنوي', 'EGP'),
+            _buildTextField(
+                _personalExemptionController, 'الإعفاء الشخصي السنوي', 'EGP'),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('خصم تأمين الموظف من وعاء الضريبة'),
@@ -386,17 +427,23 @@ class _RulesPageState extends State<RulesPage> {
               children: [
                 Icon(Icons.health_and_safety, color: Colors.blue.shade700),
                 const SizedBox(width: 8),
-                Text('insurance_settings'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('insurance_settings'.tr(),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 16),
-            _buildTextField(_insuranceEmployeeController, 'insurance_employee'.tr(), '%'),
+            _buildTextField(
+                _insuranceEmployeeController, 'insurance_employee'.tr(), '%'),
             const SizedBox(height: 12),
-            _buildTextField(_insuranceCompanyController, 'insurance_company'.tr(), '%'),
+            _buildTextField(
+                _insuranceCompanyController, 'insurance_company'.tr(), '%'),
             const SizedBox(height: 12),
-            _buildTextField(_minInsuranceController, 'min_insurance'.tr(), 'EGP'),
+            _buildTextField(
+                _minInsuranceController, 'min_insurance'.tr(), 'EGP'),
             const SizedBox(height: 12),
-            _buildTextField(_maxInsuranceController, 'max_insurance'.tr(), 'EGP'),
+            _buildTextField(
+                _maxInsuranceController, 'max_insurance'.tr(), 'EGP'),
           ],
         ),
       ),
@@ -414,7 +461,9 @@ class _RulesPageState extends State<RulesPage> {
               children: [
                 Icon(Icons.account_balance, color: Colors.green.shade700),
                 const SizedBox(width: 8),
-                Text('bank_settings'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('bank_settings'.tr(),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 16),
@@ -442,7 +491,9 @@ class _RulesPageState extends State<RulesPage> {
               children: [
                 Icon(Icons.card_giftcard, color: Colors.amber.shade700),
                 const SizedBox(width: 8),
-                Text('bonuses_settings'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('bonuses_settings'.tr(),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 16),
@@ -455,7 +506,8 @@ class _RulesPageState extends State<RulesPage> {
                     decoration: const InputDecoration(
                       hintText: 'Bonus name',
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       isDense: true,
                     ),
                     style: const TextStyle(fontSize: 13),
@@ -469,7 +521,8 @@ class _RulesPageState extends State<RulesPage> {
                     decoration: const InputDecoration(
                       hintText: 'Amount',
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       isDense: true,
                     ),
                     keyboardType: TextInputType.number,
@@ -483,14 +536,24 @@ class _RulesPageState extends State<RulesPage> {
                     initialValue: _bonusType,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                       isDense: true,
                     ),
                     style: const TextStyle(fontSize: 12),
                     items: const [
-                      DropdownMenuItem(value: 'fixed', child: Text('Fixed', overflow: TextOverflow.ellipsis)),
-                      DropdownMenuItem(value: 'percentage', child: Text('Percent', overflow: TextOverflow.ellipsis)),
-                      DropdownMenuItem(value: 'performance', child: Text('Perf.', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(
+                          value: 'fixed',
+                          child:
+                              Text('Fixed', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(
+                          value: 'percentage',
+                          child:
+                              Text('Percent', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(
+                          value: 'performance',
+                          child:
+                              Text('Perf.', overflow: TextOverflow.ellipsis)),
                     ],
                     onChanged: (value) {
                       if (value != null) {
@@ -501,7 +564,8 @@ class _RulesPageState extends State<RulesPage> {
                 ),
                 const SizedBox(width: 4),
                 IconButton(
-                  icon: const Icon(Icons.add_circle, color: Colors.green, size: 24),
+                  icon: const Icon(Icons.add_circle,
+                      color: Colors.green, size: 24),
                   onPressed: _addBonus,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -526,7 +590,8 @@ class _RulesPageState extends State<RulesPage> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, size: 16, color: Colors.red),
+                      icon:
+                          const Icon(Icons.close, size: 16, color: Colors.red),
                       onPressed: () {
                         setState(() {
                           _taxService.bonuses.remove(bonus);
@@ -556,7 +621,9 @@ class _RulesPageState extends State<RulesPage> {
               children: [
                 Icon(Icons.remove_circle_outline, color: Colors.red.shade700),
                 const SizedBox(width: 8),
-                Text('deductions_settings'.tr(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('deductions_settings'.tr(),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
             const SizedBox(height: 16),
@@ -569,7 +636,8 @@ class _RulesPageState extends State<RulesPage> {
                     decoration: const InputDecoration(
                       hintText: 'Deduction name',
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       isDense: true,
                     ),
                     style: const TextStyle(fontSize: 13),
@@ -583,7 +651,8 @@ class _RulesPageState extends State<RulesPage> {
                     decoration: const InputDecoration(
                       hintText: 'Amount',
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       isDense: true,
                     ),
                     keyboardType: TextInputType.number,
@@ -597,14 +666,23 @@ class _RulesPageState extends State<RulesPage> {
                     initialValue: _deductionType,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                       isDense: true,
                     ),
                     style: const TextStyle(fontSize: 12),
                     items: const [
-                      DropdownMenuItem(value: 'fixed', child: Text('Fixed', overflow: TextOverflow.ellipsis)),
-                      DropdownMenuItem(value: 'percentage', child: Text('Percent', overflow: TextOverflow.ellipsis)),
-                      DropdownMenuItem(value: 'loan', child: Text('Loan', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(
+                          value: 'fixed',
+                          child:
+                              Text('Fixed', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(
+                          value: 'percentage',
+                          child:
+                              Text('Percent', overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(
+                          value: 'loan',
+                          child: Text('Loan', overflow: TextOverflow.ellipsis)),
                     ],
                     onChanged: (value) {
                       if (value != null) {
@@ -615,7 +693,8 @@ class _RulesPageState extends State<RulesPage> {
                 ),
                 const SizedBox(width: 4),
                 IconButton(
-                  icon: const Icon(Icons.add_circle, color: Colors.green, size: 24),
+                  icon: const Icon(Icons.add_circle,
+                      color: Colors.green, size: 24),
                   onPressed: _addDeduction,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -640,7 +719,8 @@ class _RulesPageState extends State<RulesPage> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, size: 16, color: Colors.red),
+                      icon:
+                          const Icon(Icons.close, size: 16, color: Colors.red),
                       onPressed: () {
                         setState(() {
                           _taxService.deductions.remove(deduction);
@@ -660,7 +740,8 @@ class _RulesPageState extends State<RulesPage> {
   }
 
   void _addBonus() {
-    if (_bonusNameController.text.isNotEmpty && _bonusAmountController.text.isNotEmpty) {
+    if (_bonusNameController.text.isNotEmpty &&
+        _bonusAmountController.text.isNotEmpty) {
       setState(() {
         _taxService.bonuses.add({
           'name': _bonusNameController.text,
@@ -674,7 +755,8 @@ class _RulesPageState extends State<RulesPage> {
   }
 
   void _addDeduction() {
-    if (_deductionNameController.text.isNotEmpty && _deductionAmountController.text.isNotEmpty) {
+    if (_deductionNameController.text.isNotEmpty &&
+        _deductionAmountController.text.isNotEmpty) {
       setState(() {
         _taxService.deductions.add({
           'name': _deductionNameController.text,
@@ -695,11 +777,13 @@ class _RulesPageState extends State<RulesPage> {
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 16),
       ),
-      child: Text('save_settings'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      child: Text('save_settings'.tr(),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, String? suffix) {
+  Widget _buildTextField(
+      TextEditingController controller, String label, String? suffix) {
     return TextField(
       controller: controller,
       decoration: InputDecoration(

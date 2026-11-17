@@ -1,6 +1,6 @@
 // lib/views/users/users_page.dart
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import '../../core/audit/audit_log.dart';
 import '../../core/auth/auth_service.dart';
@@ -72,8 +72,8 @@ class _UsersPageState extends State<UsersPage> {
               const SizedBox(height: 12),
               Align(
                 alignment: AlignmentDirectional.centerStart,
-                child: Text('role'.tr(),
-                    style: Theme.of(ctx).textTheme.bodySmall),
+                child:
+                    Text('role'.tr(), style: Theme.of(ctx).textTheme.bodySmall),
               ),
               // DropdownButton (بدل DropdownButtonFormField) عشان `value`
               // فيها شغّالة على كل إصدارات Flutter بدون تحذيرات deprecated.
@@ -118,8 +118,7 @@ class _UsersPageState extends State<UsersPage> {
         content: TextField(
             controller: passCtrl,
             obscureText: true,
-            decoration:
-                InputDecoration(labelText: 'temporary_password'.tr())),
+            decoration: InputDecoration(labelText: 'temporary_password'.tr())),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -249,7 +248,8 @@ class _UsersPageState extends State<UsersPage> {
                               },
                       ),
                       IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        icon:
+                            const Icon(Icons.delete_outline, color: Colors.red),
                         onPressed: isSelf ? null : () => _confirmDelete(u),
                       ),
                     ],

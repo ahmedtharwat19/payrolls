@@ -1,35 +1,47 @@
-/// كل صلاحية في النظام. أضف أي صلاحية جديدة هنا فقط، والباقي هياخدها أوتوماتيك.
+// lib/core/auth/permission.dart
+
 enum Permission {
+  // ============ الموظفين ============
   viewEmployees,
   addEmployee,
   editEmployee,
   deleteEmployee,
+
+  // ============ المرتبات ============
   viewPayroll,
   runPayroll,
   editSalary,
+
+  // ============ التقارير ============
   viewReports,
   exportReports,
+
+  // ============ الإدارة ============
   manageUsers,
   manageRoles,
   manageSettings,
   manageLicense,
-
-  /// نسخ احتياطي / استعادة / مسح البيانات / أدوات الصيانة.
   manageData,
+
+  // ============ ✅ جديد: الموارد البشرية ============
+  manageAttendance,
+  manageLeaves,
+  managePenalties,
+  viewDashboard,
+  viewCompliance,
+  viewEOSCalculator,
+  manageAttendanceSettings,
 }
 
 extension PermissionLabel on Permission {
-  /// مفتاح ترجمة (easy_localization) - استخدمه كده: permission.labelKey.tr()
-  /// المفاتيح دي موجودة في ar.json/en.json (بعضها بيعيد استخدام مفاتيح
-  /// موجودة أصلاً في المشروع زي add_employee/edit_employee).
   String get labelKey {
     switch (this) {
       case Permission.viewEmployees:
         return 'permission_view_employees';
       case Permission.addEmployee:
-        return 'add_employee'; // مفتاح موجود بالفعل في المشروع
+        return 'add_employee';
       case Permission.editEmployee:
-        return 'edit_employee'; // مفتاح موجود بالفعل في المشروع
+        return 'edit_employee';
       case Permission.deleteEmployee:
         return 'delete_employee';
       case Permission.viewPayroll:
@@ -52,6 +64,20 @@ extension PermissionLabel on Permission {
         return 'permission_manage_license';
       case Permission.manageData:
         return 'permission_manage_data';
+      case Permission.manageAttendance:
+        return 'permission_manage_attendance';
+      case Permission.manageLeaves:
+        return 'permission_manage_leaves';
+      case Permission.managePenalties:
+        return 'permission_manage_penalties';
+      case Permission.viewDashboard:
+        return 'permission_view_dashboard';
+      case Permission.viewCompliance:
+        return 'permission_view_compliance';
+      case Permission.viewEOSCalculator:
+        return 'permission_view_eos';
+      case Permission.manageAttendanceSettings:
+        return 'permission_manage_attendance_settings';
     }
   }
 }

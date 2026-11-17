@@ -1,5 +1,5 @@
 // lib/views/reports/reports_page.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 import '../../core/auth/auth_service.dart';
@@ -13,14 +13,29 @@ class ReportsPage extends StatefulWidget {
 }
 
 class _ReportsPageState extends State<ReportsPage> {
-
   final List<Map<String, dynamic>> _reports = [
-    {'id': 'payroll_summary', 'title': 'Payroll Summary', 'icon': Icons.summarize},
+    {
+      'id': 'payroll_summary',
+      'title': 'Payroll Summary',
+      'icon': Icons.summarize
+    },
     {'id': 'salary_slip', 'title': 'Salary Slips', 'icon': Icons.receipt_long},
     {'id': 'tax_report', 'title': 'Tax Report', 'icon': Icons.request_quote},
-    {'id': 'insurance_report', 'title': 'Insurance Report', 'icon': Icons.health_and_safety},
-    {'id': 'attendance_report', 'title': 'Attendance Report', 'icon': Icons.calendar_today},
-    {'id': 'bank_transfer', 'title': 'Bank Transfer', 'icon': Icons.account_balance},
+    {
+      'id': 'insurance_report',
+      'title': 'Insurance Report',
+      'icon': Icons.health_and_safety
+    },
+    {
+      'id': 'attendance_report',
+      'title': 'Attendance Report',
+      'icon': Icons.calendar_today
+    },
+    {
+      'id': 'bank_transfer',
+      'title': 'Bank Transfer',
+      'icon': Icons.account_balance
+    },
   ];
 
   @override
@@ -32,17 +47,17 @@ class _ReportsPageState extends State<ReportsPage> {
         foregroundColor: Colors.white,
         actions: [
           if (context.watch<AuthService>().can(Permission.exportReports))
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf),
-            onPressed: _exportReport,
-            tooltip: 'export_pdf'.tr(),
-          ),
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf),
+              onPressed: _exportReport,
+              tooltip: 'export_pdf'.tr(),
+            ),
           if (context.watch<AuthService>().can(Permission.exportReports))
-          IconButton(
-            icon: const Icon(Icons.table_view),
-            onPressed: _exportExcel,
-            tooltip: 'export_excel'.tr(),
-          ),
+            IconButton(
+              icon: const Icon(Icons.table_view),
+              onPressed: _exportExcel,
+              tooltip: 'export_excel'.tr(),
+            ),
         ],
       ),
       body: GridView.builder(

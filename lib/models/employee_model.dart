@@ -1,7 +1,7 @@
 // lib/models/employee_model.dart
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class Employee {
   final String id;
@@ -27,7 +27,8 @@ class Employee {
   final String salaryType; // 'net' or 'gross'
   final String paymentMethod; // 'cash' or 'bank'
   final bool isActive;
-
+// ✅ الحقل الجديد
+  final bool attendanceEnabled;
   final String bankName;
   final String bankAccount;
   final String bankSwift;
@@ -61,6 +62,7 @@ class Employee {
     this.bankAccount = '',
     this.bankSwift = '',
     this.bankIban = '',
+    this.attendanceEnabled = true, // ✅ القيمة الافتراضية
   });
 
   String getDisplayName(BuildContext context) {
@@ -105,6 +107,7 @@ class Employee {
       bankAccount: map['bankAccount'] as String? ?? '',
       bankSwift: map['bankSwift'] as String? ?? '',
       bankIban: map['bankIban'] as String? ?? '',
+      attendanceEnabled: (map['attendanceEnabled'] as int?) == 1,
     );
   }
 
@@ -137,6 +140,7 @@ class Employee {
       'bankAccount': bankAccount,
       'bankSwift': bankSwift,
       'bankIban': bankIban,
+      'attendanceEnabled': attendanceEnabled ? 1 : 0,
     };
   }
 
@@ -168,6 +172,7 @@ class Employee {
     String? bankAccount,
     String? bankSwift,
     String? bankIban,
+    bool? attendanceEnabled,
   }) {
     return Employee(
       id: id ?? this.id,
@@ -197,6 +202,7 @@ class Employee {
       bankAccount: bankAccount ?? this.bankAccount,
       bankSwift: bankSwift ?? this.bankSwift,
       bankIban: bankIban ?? this.bankIban,
+      attendanceEnabled: attendanceEnabled ?? this.attendanceEnabled,
     );
   }
 }

@@ -1,5 +1,5 @@
 // lib/views/payroll/historical_payroll_page.dart
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 class HistoricalPayrollPage extends StatefulWidget {
@@ -54,7 +54,8 @@ class _HistoricalPayrollPageState extends State<HistoricalPayrollPage> {
               children: [
                 Text(
                   DateFormat('MMMM yyyy').format(_selectedMonth),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 Row(
                   children: [
@@ -97,8 +98,10 @@ class _HistoricalPayrollPageState extends State<HistoricalPayrollPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildSummaryCard('total_employees'.tr(), '10', Icons.people),
-                  _buildSummaryCard('total_salary'.tr(), '150,000 EGP', Icons.attach_money),
-                  _buildSummaryCard('avg_salary'.tr(), '15,000 EGP', Icons.trending_up),
+                  _buildSummaryCard(
+                      'total_salary'.tr(), '150,000 EGP', Icons.attach_money),
+                  _buildSummaryCard(
+                      'avg_salary'.tr(), '15,000 EGP', Icons.trending_up),
                 ],
               ),
             ),
@@ -133,7 +136,8 @@ class _HistoricalPayrollPageState extends State<HistoricalPayrollPage> {
       children: [
         Icon(icon, size: 28, color: Colors.green),
         const SizedBox(height: 8),
-        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(value,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       ],
     );
